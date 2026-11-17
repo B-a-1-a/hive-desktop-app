@@ -1,4 +1,6 @@
 import { sourceControlClients } from "@t3tools/client-runtime/source-control-clients";
+import { useDeveloperMode } from "~/hive/developerMode";
+import { isDeveloperPanelSurface } from "~/hive/developerMode.logic";
 import { scopeThreadRef } from "@t3tools/client-runtime/environment";
 import {
   threadRuntimeIsActive,
@@ -335,6 +337,7 @@ function RightPanelEmptyState(props: {
   sideChatDisabledReason: string | null;
 }) {
   const [highlight, setHighlight] = useState(-1);
+  const developerMode = useDeveloperMode();
 
   const actions = [
     {
@@ -407,7 +410,7 @@ function RightPanelEmptyState(props: {
           },
         ]
       : []),
-  ] as const;
+  ].filter((action) => developerMode || !isDeveloperPanelSurface(action.label));
 
   type SurfaceAction = (typeof actions)[number];
 
@@ -1094,6 +1097,7 @@ export function RightPanelTabs(props: RightPanelTabsProps) {
     });
   };
 
+  const developerMode = useDeveloperMode();
   const addSurfaceActions = [
     {
       label: "Browser",
@@ -1163,7 +1167,7 @@ export function RightPanelTabs(props: RightPanelTabsProps) {
           },
         ]
       : []),
-  ] as const;
+  ].filter((action) => developerMode || !isDeveloperPanelSurface(action.label));
 
   const handleAddSurfaceMenuKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
     const action = surfaceShortcutActionForKey(addSurfaceActions, event.nativeEvent);

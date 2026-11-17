@@ -1,4 +1,6 @@
 import { AuthEnvironmentMaintainScope } from "@t3tools/contracts";
+import { useDeveloperMode } from "~/hive/developerMode";
+import { isDeveloperSettingsPath } from "~/hive/developerMode.logic";
 
 import { usePrimaryCloudLinkState } from "~/cloud/cloudLinkState";
 import { hasCloudPublicConfig } from "~/cloud/publicConfig";
@@ -60,7 +62,8 @@ export function useAvailableSettingsSearchItems() {
   const wslSettingsRowVisible =
     isWslSettingsRowVisible({ state: desktopWsl.data, error: desktopWsl.error }) === true;
 
-  return filterAvailableSettingsSearchItems({
+  const developerMode = useDeveloperMode();
+  const items = filterAvailableSettingsSearchItems({
     localEnvironmentDisabled,
     hasCloudPublicConfig: cloudPublicConfig,
     hasEnvironment,
@@ -74,4 +77,5 @@ export function useAvailableSettingsSearchItems() {
     hasTextGeneratorsEnvironment,
     hasPrimaryEnvironment: primaryEnvironmentId !== null,
   });
+  return developerMode ? items : items.filter((item) => !isDeveloperSettingsPath(item.to));
 }

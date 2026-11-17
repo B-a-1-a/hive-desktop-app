@@ -1,4 +1,5 @@
 import { ArrowLeftIcon, ArrowRightIcon, ChartNoAxesColumnIcon, SettingsIcon } from "lucide-react";
+import { useDeveloperMode } from "~/hive/developerMode";
 import type { ReactNode } from "react";
 import { memo } from "react";
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
@@ -225,7 +226,8 @@ const SidebarUtilityMenu = memo(function SidebarUtilityMenu() {
   const isOnUtilityPage = useLocation({
     select: (location) => isSidebarUtilityPage(location.pathname),
   });
-  const pullRequestsSupported = usePullRequestsSupported();
+  const developerMode = useDeveloperMode();
+  const pullRequestsSupported = usePullRequestsSupported() && developerMode;
   const closeMobileSidebar = () => {
     if (isMobile) {
       setOpenMobile(false);

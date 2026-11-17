@@ -29,6 +29,7 @@ import {
   subscribeDraftThreadPromotion,
   useComposerDraftStore,
 } from "./composerDraftStore";
+import { startDeveloperModeShortcutGate } from "./hive/developerMode";
 import { startDefaultThemeAdoption } from "./hooks/useDefaultTheme";
 import { startEnvironmentThemeRepaint } from "./hooks/useEnvironmentTheme";
 import { readLocalStorageValue, subscribeLocalStorageKey } from "./hooks/useLocalStorage";
@@ -214,6 +215,7 @@ export function startAppServices(): AppRouter {
   startSshPasswordPromptQueue();
 
   startKeybindingsUpdateToasts();
+  startDeveloperModeShortcutGate();
   startSlowRpcRequestToasts();
   startHostFreezeToasts();
   startLegacyThreadMigrationToast();
