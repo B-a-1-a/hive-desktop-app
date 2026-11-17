@@ -192,6 +192,7 @@ import * as StorageCleanup from "./storageCleanup.ts";
 import * as TerminalManager from "./terminal/Manager.ts";
 import { terminalOutputStream, withOutputWindow } from "./terminal/OutputProtocol.ts";
 import * as ServerBrowser from "./preview/ServerBrowser.ts";
+import * as BrowserUseService from "./browserUse/BrowserUseService.ts";
 import * as DeviceService from "./device/DeviceService.ts";
 import { remoteSshDeviceHosts } from "./device/localSshDeviceHost.ts";
 import * as PreviewManager from "./preview/Manager.ts";
@@ -1453,6 +1454,7 @@ export const layerWsRpc = (
       const reviewGuides = yield* PullRequestReviewGuideService.PullRequestReviewGuideService;
       const pullRequestSync = yield* PullRequestSyncReactor.PullRequestSyncReactor;
       const deviceService = yield* DeviceService.DeviceService;
+      const browserUse = yield* BrowserUseService.BrowserUseService;
       const deviceHostContext =
         yield* Effect.context<Effect.Services<ReturnType<typeof remoteSshDeviceHosts>>>();
       const orchestrationEngine = yield* Orchestrator.OrchestratorV2;
@@ -3253,6 +3255,10 @@ export const layerWsRpc = (
         [WS_METHODS.previewReportProfiles]: (input) => reportProfiles(input),
         [WS_METHODS.previewReportStatus]: (input) => previewManager.reportStatus(input),
         [WS_METHODS.subscribePreviewEvents]: (_input) => previewManager.events,
+        [WS_METHODS.browserUseStatus]: (_input) => browserUse.status,
+        [WS_METHODS.browserUseConfigure]: (input) => browserUse.configure(input),
+        [WS_METHODS.browserUseCloseSession]: (input) =>
+          browserUse.close({ sessionId: input.sessionId }).pipe(Effect.andThen(browserUse.status)),
         [WS_METHODS.deviceConfigure]: (input) => deviceService.configure(input),
         [WS_METHODS.deviceTestHost]: (input) => deviceService.testHost(input),
         [WS_METHODS.deviceEasAccount]: (input) => deviceService.easAccount(input),

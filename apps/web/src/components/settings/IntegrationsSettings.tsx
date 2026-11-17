@@ -2,6 +2,7 @@ import { DeviceHostUpdates } from "../device/DeviceHostUpdates";
 import { DeviceToolVersions } from "../device/DeviceToolVersions";
 import { useScopedSettings, useUpdateScopedSettings } from "./useScopedSettings";
 import { ScopedSwitch } from "./ScopedSwitch";
+import { BrowserUseSettings } from "./BrowserUseSettings";
 import { DeviceSourcesSettings } from "./DeviceSourcesSettings";
 import {
   AuthSettingsWriteScope,
@@ -1584,6 +1585,9 @@ export function BrowserSettingsPanel() {
     <SettingsPageContainer>
       <SettingsSection id="browser-agent-access" title="Agent access">
         <AgentBrowserAccessSetting />
+      </SettingsSection>
+      <SettingsSection id="browser-use" title="Browser use">
+        <BrowserUseSettings />
       </SettingsSection>
       <SettingsSection id="browser" title="Browsing">
         <SettingsUnavailableGroup message={desktopOnlyMessage}>

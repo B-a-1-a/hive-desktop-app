@@ -70,6 +70,8 @@ import { WorktreeToolkit } from "./toolkits/worktree/tools.ts";
 import * as WorktreeMcpService from "./WorktreeMcpService.ts";
 import * as PullRequestsHandlers from "./toolkits/pullRequests/handlers.ts";
 import { PullRequestsToolkit } from "./toolkits/pullRequests/tools.ts";
+import * as BrowserUseHandlers from "./toolkits/browserUse/handlers.ts";
+import { BrowserUseToolkit } from "./toolkits/browserUse/tools.ts";
 import * as DeviceHandlers from "./toolkits/device/handlers.ts";
 import {
   DeviceScreenshotTool,
@@ -1218,6 +1220,8 @@ export const layerDeviceToolkit = Layer.mergeAll(
   layerDeviceScreenshotRegistration,
 );
 
+const layerBrowserUseToolkit = toolkitRegistration(BrowserUseToolkit, BrowserUseHandlers.layer);
+
 /**
  * `McpServer` for in-process calls, which provide `McpInvocationContext`
  * around `callTool` as the auth middleware does for each /mcp request.
@@ -1259,6 +1263,7 @@ export const layerTools = Layer.mergeAll(
   layerWorktreeToolkitRegistration,
   layerPullRequestsToolkit,
   layerDeviceToolkit,
+  layerBrowserUseToolkit,
   layerHtmlToolkit,
 );
 

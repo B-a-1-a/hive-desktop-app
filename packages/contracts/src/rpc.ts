@@ -33,6 +33,13 @@ import {
   ChatGptHandoffInput,
   ChatGptHandoffState,
 } from "./providerSetup.ts";
+import {
+  BrowserUseCloseSessionInput,
+  BrowserUseConfigureInput,
+  BrowserUseError,
+  BrowserUseStatus,
+  BrowserUseStatusInput,
+} from "./browserUse.ts";
 import * as Schema from "effect/Schema";
 import * as Rpc from "effect/rpc/Rpc";
 import * as RpcGroup from "effect/rpc/RpcGroup";
@@ -502,6 +509,10 @@ export const WS_METHODS = {
   deviceShutdown: "device.shutdown",
   deviceDetail: "device.detail",
   deviceAction: "device.action",
+
+  browserUseStatus: "browserUse.status",
+  browserUseConfigure: "browserUse.configure",
+  browserUseCloseSession: "browserUse.closeSession",
 
   serverProbe: "server.probe",
   serverGetConfig: "server.getConfig",
@@ -1722,6 +1733,24 @@ const WsDeviceSimlockIdentityRpc = Rpc.make(WS_METHODS.deviceSimlockIdentity, {
   error: Schema.Union([DeviceSimlockIdentityError, EnvironmentAuthorizationError]),
 });
 
+const WsBrowserUseStatusRpc = Rpc.make(WS_METHODS.browserUseStatus, {
+  payload: BrowserUseStatusInput,
+  success: BrowserUseStatus,
+  error: Schema.Union([BrowserUseError, EnvironmentAuthorizationError]),
+});
+
+const WsBrowserUseConfigureRpc = Rpc.make(WS_METHODS.browserUseConfigure, {
+  payload: BrowserUseConfigureInput,
+  success: BrowserUseStatus,
+  error: Schema.Union([BrowserUseError, EnvironmentAuthorizationError]),
+});
+
+const WsBrowserUseCloseSessionRpc = Rpc.make(WS_METHODS.browserUseCloseSession, {
+  payload: BrowserUseCloseSessionInput,
+  success: BrowserUseStatus,
+  error: Schema.Union([BrowserUseError, EnvironmentAuthorizationError]),
+});
+
 const WsDeviceListRpc = Rpc.make(WS_METHODS.deviceList, {
   payload: DeviceListInput,
   success: DeviceServiceState,
@@ -2256,6 +2285,9 @@ export const WsRpcGroup = RpcGroup.make(
   WsDeviceDetailRpc,
   WsDeviceActionRpc,
   WsSubscribeDeviceStateRpc,
+  WsBrowserUseStatusRpc,
+  WsBrowserUseConfigureRpc,
+  WsBrowserUseCloseSessionRpc,
   WsSubscribeServerConfigRpc,
   WsSubscribeServerLifecycleRpc,
   WsSubscribeAuthAccessRpc,

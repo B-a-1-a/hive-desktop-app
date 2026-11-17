@@ -16,6 +16,7 @@
 - [SnapShots](./user/snap-shot.md)
 - [Visual replies](./user/html-renders.md)
 - [Import browser sessions](./user/browser-import.md)
+- [Browser use](./user/browser-use.md)
 - [Use T3 Code as your default browser](./user/default-browser.md)
 - [Devices](./user/devices.md)
 - [Usage and limits](./user/usage.md)

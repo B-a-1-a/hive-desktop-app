@@ -986,6 +986,18 @@ export const SETTINGS_SEARCH_ITEMS = [
     searchTerms: ["allow disable enable open drive preview tools sessions project override"],
   },
   {
+    id: "browser-use",
+    title: "Let agents use a browser on this computer",
+    to: "/settings/browser",
+    searchTerms: ["browser use agent-browser chrome edge brave arc control cursor watch window"],
+  },
+  {
+    id: "browser-use-browser",
+    title: "Browser agents use",
+    to: "/settings/browser",
+    searchTerms: ["browser use choose pick chrome edge brave arc chromium vivaldi installed"],
+  },
+  {
     id: "device-sources",
     title: "Device sources",
     to: "/settings/devices",

@@ -1,3 +1,4 @@
+import { BrowserUseBrowserId } from "./browserUse.ts";
 import { EasDeviceHostConfigs, SimlockDeviceHostConfigs, SshDeviceHostConfigs } from "./device.ts";
 import {
   AuthOrchestrationOperateScope,
@@ -1419,6 +1420,11 @@ export const ServerSettings = Schema.Struct({
   simlockDeviceHosts: SimlockDeviceHostConfigs.pipe(Schema.withDecodingDefault(Effect.succeed([]))),
   /** Alpha: Simlock device hosts. Off, the server ignores `simlockDeviceHosts`. */
   simlockDeviceHostsEnabled: Schema.Boolean.pipe(Schema.withDecodingDefault(Effect.succeed(false))),
+  /** Turning this on is the consent to install the pinned agent-browser CLI. */
+  enableBrowserUse: Schema.Boolean.pipe(Schema.withDecodingDefault(Effect.succeed(false))),
+  browserUseBrowserId: Schema.NullOr(BrowserUseBrowserId).pipe(
+    Schema.withDecodingDefault(Effect.succeed(null)),
+  ),
   sidebarAutoSettleAfterDays: Schema.NullOr(SidebarAutoSettleAfterDays).pipe(
     Schema.withDecodingDefault(Effect.succeed(DEFAULT_SIDEBAR_AUTO_SETTLE_AFTER_DAYS)),
   ),
@@ -1857,6 +1863,8 @@ export const ServerSettingsPatch = Schema.Struct({
   easDeviceHosts: Schema.optionalKey(EasDeviceHostConfigs),
   simlockDeviceHosts: Schema.optionalKey(SimlockDeviceHostConfigs),
   simlockDeviceHostsEnabled: Schema.optionalKey(Schema.Boolean),
+  enableBrowserUse: Schema.optionalKey(Schema.Boolean),
+  browserUseBrowserId: Schema.optionalKey(Schema.NullOr(BrowserUseBrowserId)),
   sidebarAutoSettleAfterDays: Schema.optionalKey(Schema.NullOr(SidebarAutoSettleAfterDays)),
   compactIdleThreads: Schema.optionalKey(LegacyCompactIdleThreads),
   idleCompaction: Schema.optionalKey(IdleCompactionMode),

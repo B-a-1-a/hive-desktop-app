@@ -10,6 +10,7 @@ import { CommandResolutionCache, resolveCommandPath } from "./shell.ts";
 const NodeRuntimeFeature = Schema.Literals([
   "Local device support",
   "Device automation",
+  "Browser use",
   "Antigravity",
   "Antigravity sign-in",
 ]);

@@ -19,6 +19,9 @@ import { WS_METHODS } from "./rpc.ts";
 export const CLIENT_GUARDED_RPC_SCOPES = {
   [WS_METHODS.providerAuthRemoveMethod]: AuthProvidersManageScope,
   [WS_METHODS.previewClose]: AuthPreviewOperateScope,
+  // Turning browser use on installs agent-browser on the environment.
+  [WS_METHODS.browserUseConfigure]: AuthSettingsWriteScope,
+  [WS_METHODS.browserUseCloseSession]: AuthOrchestrationOperateScope,
   // Stopping a server signals its processes, as closing a terminal does.
   [WS_METHODS.previewStopLocalServer]: AuthTerminalOperateScope,
   [WS_METHODS.serverRunStorageCleanup]: AuthSettingsWriteScope,

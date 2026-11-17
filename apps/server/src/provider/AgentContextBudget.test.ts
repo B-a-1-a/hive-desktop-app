@@ -10,6 +10,7 @@ import { McpServer } from "effect/ai";
 import { AssetSigner } from "../assets/AssetSigner.ts";
 import { ServerSecretStore } from "../auth/ServerSecretStore.ts";
 import { ServerConfig } from "../config.ts";
+import { BrowserUseService } from "../browserUse/BrowserUseService.ts";
 import { DeviceService } from "../device/DeviceService.ts";
 import { ServerEnvironment } from "../environment/ServerEnvironment.ts";
 import { GitWorkflowService } from "../git/GitWorkflowService.ts";
@@ -50,6 +51,7 @@ import budget from "./agentContextBudget.json" with { type: "json" };
 const toolHandlerServices = Layer.mergeAll(
   Layer.mock(AssetSigner)({}),
   Layer.mock(DeviceService)({}),
+  Layer.mock(BrowserUseService)({}),
   Layer.mock(DocumentText)({}),
   Layer.mock(GitVcsDriver)({}),
   Layer.mock(GitWorkflowService)({}),
