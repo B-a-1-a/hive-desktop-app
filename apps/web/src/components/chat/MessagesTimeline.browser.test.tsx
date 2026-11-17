@@ -1031,9 +1031,9 @@ describe("MessagesTimeline automation prompts", () => {
         ],
       },
     );
-    expect(screen.buttons("Edit from here")).toHaveLength(0);
+    expect(screen.buttons("Undo to here")).toHaveLength(0);
     await click(screen.button(/^Automation/));
-    expect(screen.buttons("Edit from here")).toHaveLength(1);
+    expect(screen.buttons("Undo to here")).toHaveLength(1);
   });
 });
 

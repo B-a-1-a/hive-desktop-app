@@ -49,7 +49,7 @@ it("reaches Permissions with arrow keys, previews, and picks with Enter", async 
   await expect.element(supervised).toHaveFocus();
   await expect
     .element(supervised)
-    .toHaveAccessibleDescription("Ask before commands and file changes.");
+    .toHaveAccessibleDescription("Ask before the agent runs anything or changes a file.");
 
   await userEvent.keyboard("{ArrowRight}");
   await expect
