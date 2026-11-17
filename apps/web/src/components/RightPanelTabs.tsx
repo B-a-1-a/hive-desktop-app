@@ -175,7 +175,7 @@ const SURFACE_DISABLED_REASONS = {
   browser: "Browser previews are only available in the Hive desktop app.",
   terminal: "Terminal surfaces are only available from a project thread.",
   files: "Files are only available when a project is open.",
-  diff: "Diff is only available for server threads in Git repositories.",
+  diff: "Changes can be shown only after a thread starts, in a project that uses Git.",
   pullRequest: "This thread's branch has no pull request yet.",
   pullRequests: "No linked pull requests are available for this thread.",
   device: "Devices are only available from a thread.",
@@ -200,7 +200,7 @@ const SURFACE_UNAVAILABLE_HINTS = {
   browser: "Only available in the desktop app.",
   terminal: "Available when a project is open.",
   files: "Available when a project is open.",
-  diff: "Available for Git repositories.",
+  diff: "Available in projects that use Git.",
   pullRequest: "No pull request on this branch yet.",
   pullRequests: "No linked pull requests available.",
   device: "Available from a thread.",
@@ -362,7 +362,7 @@ function RightPanelEmptyState(props: {
       onClick: props.onAddFiles,
     },
     {
-      label: "Diff",
+      label: "Changes",
       icon: FileDiff,
       shortcut: "D",
       available: props.diffAvailable,
@@ -574,7 +574,7 @@ function surfaceTitle(
 ): string {
   switch (surface.kind) {
     case "diff":
-      return "Diff";
+      return "Changes";
     case "files":
       return "Files";
     case "file":
@@ -1120,7 +1120,7 @@ export function RightPanelTabs(props: RightPanelTabsProps) {
       onClick: props.onAddFiles,
     },
     {
-      label: "Diff",
+      label: "Changes",
       icon: FileDiff,
       shortcut: "D",
       available: props.diffAvailable,

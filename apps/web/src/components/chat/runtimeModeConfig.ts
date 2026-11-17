@@ -17,22 +17,22 @@ export const runtimeModeConfig: Record<
 > = {
   "approval-required": {
     label: "Supervised",
-    description: "Ask before commands and file changes.",
+    description: "Ask before the agent runs anything or changes a file.",
     icon: LockIcon,
   },
   "auto-accept-edits": {
     label: "Auto-accept edits",
-    description: "Auto-approve edits, ask before other actions.",
+    description: "Let the agent change files. Ask before anything else.",
     icon: PenLineIcon,
   },
   auto: {
     label: "Auto",
-    description: "Supported providers approve routine actions; others still ask.",
+    description: "Routine actions go ahead where the agent supports it. Otherwise it asks.",
     icon: ShieldCheckIcon,
   },
   "full-access": {
     label: "Full access",
-    description: "Allow commands and edits without prompts.",
+    description: "Never ask. The agent can run anything and change any file.",
     // An open lock reads like a closed one at small sizes; a crossed shield does not.
     icon: ShieldOffIcon,
   },

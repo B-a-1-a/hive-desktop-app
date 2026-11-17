@@ -145,7 +145,7 @@ export const SETTINGS_NAV_GROUPS: ReadonlyArray<{
     ],
   },
   {
-    heading: "Code",
+    heading: "Projects",
     paths: ["/settings/projects", "/settings/source-control", "/settings/worktrees"],
   },
   {

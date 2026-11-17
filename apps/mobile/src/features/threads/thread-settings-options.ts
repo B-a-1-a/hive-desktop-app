@@ -12,22 +12,22 @@ export const RUNTIME_MODE_CHOICES: ReadonlyArray<{
   {
     mode: "approval-required",
     label: "Supervised",
-    description: "Ask before commands and file changes.",
+    description: "Ask before the agent runs anything or changes a file.",
   },
   {
     mode: "auto-accept-edits",
     label: "Auto-accept edits",
-    description: "Auto-approve edits, ask before other actions.",
+    description: "Let the agent change files. Ask before anything else.",
   },
   {
     mode: "auto",
     label: "Auto",
-    description: "Supported providers approve routine actions; others still ask.",
+    description: "Routine actions go ahead where the agent supports it. Otherwise it asks.",
   },
   {
     mode: "full-access",
     label: "Full access",
-    description: "Allow commands and edits without prompts.",
+    description: "Never ask. The agent can run anything and change any file.",
   },
 ];
 
