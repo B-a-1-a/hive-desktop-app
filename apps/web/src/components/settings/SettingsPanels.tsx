@@ -1049,6 +1049,20 @@ export function GeneralSettingsPanel() {
           }
         />
       </SettingsSection>
+
+      <SettingsSection id="developer" title="Developer">
+        <SettingsRow
+          {...searchableSetting("developer-mode")}
+          description="Show tools for software development: code editors, the terminal, Git, pull requests, and devices."
+          control={
+            <Switch
+              checked={settings.developerModeEnabled}
+              onCheckedChange={(checked) => updateSettings({ developerModeEnabled: checked })}
+              aria-label="Developer mode"
+            />
+          }
+        />
+      </SettingsSection>
     </SettingsPageContainer>
   );
 }

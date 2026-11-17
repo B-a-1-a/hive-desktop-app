@@ -175,6 +175,15 @@ function matchesCommandShortcut(
   return resolveShortcutCommand(event, keybindings, options) === command;
 }
 
+let isHiddenShortcutCommand: ((command: KeybindingCommand) => boolean) | null = null;
+
+/** Hive: bindings for a hidden command are skipped, as if they were not configured. */
+export function setHiddenShortcutCommands(
+  isHidden: ((command: KeybindingCommand) => boolean) | null,
+) {
+  isHiddenShortcutCommand = isHidden;
+}
+
 export function resolveShortcutCommand(
   event: ShortcutEventLike,
   keybindings: ResolvedKeybindingsConfig,
@@ -191,6 +200,7 @@ export function resolveShortcutCommand(
     if (!binding) continue;
     if (!matchesWhenClause(binding.whenAst, context)) continue;
     if (!matchesKeybindingShortcut(event, shortcutForContext(binding, context), platform)) continue;
+    if (isHiddenShortcutCommand?.(binding.command)) continue;
     return binding.command;
   }
   return null;

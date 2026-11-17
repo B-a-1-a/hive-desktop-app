@@ -6,6 +6,7 @@ import {
   Minimize2Icon,
 } from "lucide-react";
 import { memo, type ReactNode } from "react";
+import { useDeveloperMode } from "~/hive/developerMode";
 
 import { cn } from "~/lib/utils";
 
@@ -53,6 +54,7 @@ export const PanelLayoutControls = memo(function PanelLayoutControls({
   onToggleThreadPanel,
   onToggleRightPanel,
 }: PanelLayoutControlsProps) {
+  const developerMode = useDeveloperMode();
   const threadPanelToggle = (
     <Toggle
       className="relative shrink-0 [-webkit-app-region:no-drag]"
@@ -87,7 +89,7 @@ export const PanelLayoutControls = memo(function PanelLayoutControls({
       data-panel-layout-controls
     >
       {showThreadPanelControl ? threadPanelControl : null}
-      {showTerminalControl ? (
+      {showTerminalControl && developerMode ? (
         <Tooltip>
           <TooltipTrigger render={<span className="flex shrink-0" />}>
             <Toggle

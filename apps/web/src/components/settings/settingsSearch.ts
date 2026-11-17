@@ -673,6 +673,14 @@ export const SETTINGS_SEARCH_ITEMS = [
     searchTerms: ["notification sound alert completion input approval desktop"],
   },
   {
+    id: "developer-mode",
+    title: "Developer mode",
+    to: "/settings/general",
+    searchTerms: [
+      "hive code developer tools terminal git pull requests editor worktrees devices source control",
+    ],
+  },
+  {
     id: "in-app-notifications",
     title: "In-app notifications",
     to: "/settings/general",

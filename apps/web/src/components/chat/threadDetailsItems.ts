@@ -1,5 +1,7 @@
 import type { ClientSettings } from "@t3tools/contracts";
 
+import { isDeveloperThreadDetailsItem } from "../../hive/developerMode.logic";
+
 // Ids are stored in client settings, so never rename one.
 export const THREAD_DETAILS_ITEMS = [
   { id: "environment", label: "Environment and worktree", defaultVisible: true },
@@ -22,8 +24,17 @@ export type ThreadDetailsVisibility = Readonly<Record<ThreadDetailsItemId, boole
 type ThreadDetailsItem = (typeof THREAD_DETAILS_ITEMS)[number];
 type ThreadDetailsItemSettings = Pick<
   ClientSettings,
-  "threadDetailsItems" | "threadDetailsUsageEnabled"
+  "threadDetailsItems" | "threadDetailsUsageEnabled" | "developerModeEnabled"
 >;
+
+/** Items a person can show or hide. Developer items need developer mode. */
+export function availableThreadDetailsItems(
+  settings: Pick<ClientSettings, "developerModeEnabled">,
+) {
+  return THREAD_DETAILS_ITEMS.filter(
+    (item) => settings.developerModeEnabled || !isDeveloperThreadDetailsItem(item.id),
+  );
+}
 
 // People who turned on the retired Labs toggle keep Usage and Context until they change them here.
 function defaultVisible(item: ThreadDetailsItem, settings: ThreadDetailsItemSettings) {
@@ -38,7 +49,9 @@ export function resolveThreadDetailsVisibility(
   return Object.fromEntries(
     THREAD_DETAILS_ITEMS.map((item) => [
       item.id,
-      settings.threadDetailsItems[item.id] ?? defaultVisible(item, settings),
+      !settings.developerModeEnabled && isDeveloperThreadDetailsItem(item.id)
+        ? false
+        : (settings.threadDetailsItems[item.id] ?? defaultVisible(item, settings)),
     ]),
   ) as Record<ThreadDetailsItemId, boolean>;
 }
@@ -53,8 +66,11 @@ export function setThreadDetailsItem(
   return visible === defaultVisible(item, settings) ? rest : { ...rest, [item.id]: visible };
 }
 
-export function isDefaultThreadDetailsVisibility(visibility: ThreadDetailsVisibility) {
-  return THREAD_DETAILS_ITEMS.every((item) => visibility[item.id] === item.defaultVisible);
+export function isDefaultThreadDetailsVisibility(
+  visibility: ThreadDetailsVisibility,
+  items: ReadonlyArray<ThreadDetailsItem> = THREAD_DETAILS_ITEMS,
+) {
+  return items.every((item) => visibility[item.id] === item.defaultVisible);
 }
 
 /** Also clears the retired Labs flag, so Usage and Context return to off. */

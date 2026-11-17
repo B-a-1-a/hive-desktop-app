@@ -1,8 +1,10 @@
 # Hive project scope
 
-This checkout is Hive, based on the pinned T3 Code release in UPSTREAM.json. The following technical guide is inherited upstream guidance. The user's current scope takes precedence: retain all upstream features and provider implementations; change only app branding and identity. Keep original attribution and external service identities accurate. Use clean `.hive` development state with `--no-seed`; never import or modify old T3 Code or Browser Agent profiles.
+This checkout is Hive, based on the pinned T3 Code release in UPSTREAM.json. The following technical guide is inherited upstream guidance. The user's current scope takes precedence: retain all upstream features and provider implementations; change only app branding and identity, plus developer mode. Keep original attribution and external service identities accurate. Use clean `.hive` development state with `--no-seed`; never import or modify old T3 Code or Browser Agent profiles.
 
 The old contributor backlog and product plan have been discarded. Follow CONTRIBUTING.md for current coordination and use .agents/skills/development-loop/SKILL.md for substantial changes. Do not infer new assignments or implement future plugins without a new request. Product direction is summarized in docs/product/direction.md as background, not as an assignment.
+
+Developer mode is a client setting, off by default, that hides software-development tools (editors, terminal, Git, pull requests, devices). Hive refreshes from upstream by snapshot, so keep the lists of what is a developer tool in apps/web/src/hive/developerMode.logic.ts and give upstream files only a one-line filter at the registry that builds the menu, list, or page. Hide a feature only when it is useless without developer knowledge; a feature anyone can use that has a developer name gets renamed instead.
 
 # T3 Code
 
