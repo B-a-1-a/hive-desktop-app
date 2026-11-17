@@ -14,6 +14,7 @@ import {
   dismissFailedSnapShot,
   resolveExistingSnapShotTarget,
   resolveSnapShotAttachmentTarget,
+  resolveSnapShotCaptureTarget,
   resolveSnapShotDeliveryTarget,
 } from "./SnapShotCoordinator";
 import {
@@ -102,6 +103,52 @@ describe("window capture target resolution", () => {
     store.markDraftThreadPromoting(draftId, promotedRef);
 
     expect(resolveExistingSnapShotTarget(draftId, null)).toEqual(promotedRef);
+  });
+
+  it.each([
+    { destination: "current-draft", onScreen: true, expected: "on-screen" },
+    { destination: "current-draft", onScreen: false, expected: "new" },
+    { destination: "new-thread", onScreen: true, expected: "new" },
+    { destination: "new-thread", onScreen: false, expected: "new" },
+  ] as const)(
+    "sends a capture to the $expected draft for $destination (draft on screen: $onScreen)",
+    async ({ destination, onScreen, expected }) => {
+      using _env = setup();
+      const onScreenDraft = DraftId.make("snap-shot-on-screen");
+      const newDraft = DraftId.make("snap-shot-new");
+      if (onScreen) {
+        useComposerDraftStore.getState().setProjectDraftThreadId(projectRef, onScreenDraft, {
+          threadId: ThreadId.make("snap-shot-on-screen-thread"),
+        });
+      }
+      const startNewThread = vi.fn(async () => ({ draftId: newDraft }));
+
+      const target = await resolveSnapShotCaptureTarget({
+        destination,
+        lastTarget: onScreenDraft,
+        routeThreadRef: null,
+        projectRef,
+        startNewThread,
+      });
+
+      expect(target).toBe(expected === "new" ? newDraft : onScreenDraft);
+      expect(startNewThread.mock.calls).toEqual(expected === "new" ? [[projectRef]] : []);
+    },
+  );
+
+  it("drops a new-thread capture when no project is available", async () => {
+    using _env = setup();
+    const startNewThread = vi.fn(async () => ({ draftId: DraftId.make("unused") }));
+    expect(
+      await resolveSnapShotCaptureTarget({
+        destination: "new-thread",
+        lastTarget: null,
+        routeThreadRef: null,
+        projectRef: null,
+        startNewThread,
+      }),
+    ).toBeNull();
+    expect(startNewThread).not.toHaveBeenCalled();
   });
 });
 
@@ -260,6 +307,52 @@ describe("durable snapshot delivery", () => {
       }
     },
   );
+});
+
+describe("pending capture after restart", () => {
+  it("attaches a capture left on disk to a new thread draft when new-thread is chosen", async () => {
+    using _env = setup();
+    const capture = {
+      id: "12345678-1234-1234-1234-123456789abc",
+      name: "window.png",
+      mimeType: "image/png" as const,
+      sizeBytes: 3,
+      dataUrl: "data:image/png;base64,AQID",
+      source: {
+        kind: "snap-shot" as const,
+        capturedAt: "2026-09-01T00:00:00.000Z",
+        appName: "Browser",
+        windowTitle: "Docs",
+      },
+    };
+    const acknowledgeSnapShot = vi.fn(async () => undefined);
+    const bridge = {
+      readSnapShot: async () => capture,
+      acknowledgeSnapShot,
+    } as unknown as DesktopBridge;
+    const newDraft = DraftId.make("restart-new-draft");
+    // A fresh launch has no remembered target; the drain resolves one from the setting.
+    const target = await resolveSnapShotCaptureTarget({
+      destination: "new-thread",
+      lastTarget: null,
+      routeThreadRef: null,
+      projectRef,
+      startNewThread: async (ref) => {
+        useComposerDraftStore.getState().setProjectDraftThreadId(ref, newDraft, {
+          threadId: ThreadId.make("restart-new-thread"),
+        });
+        return { draftId: newDraft };
+      },
+    });
+    expect(target).toBe(newDraft);
+
+    await deliverSnapShot(bridge, capture, () => newDraft);
+
+    const draft = useComposerDraftStore.getState().getComposerDraft(newDraft);
+    expect(draft?.images.map(({ id }) => id)).toEqual([capture.id]);
+    expect(draft?.persistedAttachments.map(({ id }) => id)).toEqual([capture.id]);
+    expect(acknowledgeSnapShot).toHaveBeenCalledExactlyOnceWith(capture.id);
+  });
 });
 
 describe("snapshot destination ownership", () => {

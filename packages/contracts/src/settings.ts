@@ -231,6 +231,9 @@ export type SnapShotShortcut = typeof SnapShotShortcut.Type;
 export const SnapShotSound = Schema.Literals(["soft-pop", "camera-shutter"]);
 export type SnapShotSound = typeof SnapShotSound.Type;
 const DEFAULT_SNAP_SHOT_SOUND: SnapShotSound = "soft-pop";
+// What a capture starts. Room for later destinations, such as an agent that works from the capture.
+export const SnapShotDestination = Schema.Literals(["current-draft", "new-thread"]);
+export type SnapShotDestination = typeof SnapShotDestination.Type;
 
 export type SnapShotModifierPairShortcut = Extract<SnapShotShortcut, { readonly kind: string }>;
 
@@ -575,6 +578,9 @@ export const ClientSettingsSchema = Schema.Struct({
   ),
   snapShotFlash: Schema.Boolean.pipe(Schema.withDecodingDefault(Effect.succeed(true))),
   snapShotAnimations: Schema.Boolean.pipe(Schema.withDecodingDefault(Effect.succeed(true))),
+  snapShotDestination: SnapShotDestination.pipe(
+    Schema.withDecodingDefault(Effect.succeed("current-draft" as const)),
+  ),
   wordWrap: Schema.Boolean.pipe(Schema.withDecodingDefault(Effect.succeed(true))),
   // Opt-in TeX typesetting in rendered Markdown. Off keeps math parsing and
   // KaTeX out of the render path entirely.
@@ -2063,6 +2069,7 @@ export const ClientSettingsPatch = Schema.Struct({
   snapShotSound: Schema.optionalKey(SnapShotSound),
   snapShotFlash: Schema.optionalKey(Schema.Boolean),
   snapShotAnimations: Schema.optionalKey(Schema.Boolean),
+  snapShotDestination: Schema.optionalKey(SnapShotDestination),
   wordWrap: Schema.optionalKey(Schema.Boolean),
   mathRenderingEnabled: Schema.optionalKey(Schema.Boolean),
 });

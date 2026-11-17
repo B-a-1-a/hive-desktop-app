@@ -4,7 +4,9 @@ import {
   type DesktopSnapShotEvent,
   PROVIDER_SEND_TURN_MAX_ATTACHMENTS,
   PROVIDER_SEND_TURN_MAX_IMAGE_BYTES,
+  type ScopedProjectRef,
   type ScopedThreadRef,
+  type SnapShotDestination,
 } from "@t3tools/contracts";
 import { useEffect, useEffectEvent, useRef, useState } from "react";
 
@@ -69,6 +71,24 @@ export function resolveExistingSnapShotTarget(
     readThreadShell(target) !== null
     ? target
     : null;
+}
+
+// Routes a capture to the thread or draft on screen, or to a new thread draft in projectRef.
+// Later destinations, such as starting an agent from the capture, branch here.
+export async function resolveSnapShotCaptureTarget(input: {
+  readonly destination: SnapShotDestination;
+  readonly lastTarget: CaptureTarget | null;
+  readonly routeThreadRef: ScopedThreadRef | null;
+  readonly projectRef: ScopedProjectRef | null;
+  readonly startNewThread: (projectRef: ScopedProjectRef) => Promise<{ draftId: DraftId } | null>;
+}): Promise<CaptureTarget | null> {
+  if (input.destination === "current-draft" && input.lastTarget) {
+    const existingTarget = resolveExistingSnapShotTarget(input.lastTarget, input.routeThreadRef);
+    if (existingTarget) return existingTarget;
+  }
+  if (!input.projectRef) return null;
+  const created = await input.startNewThread(input.projectRef);
+  return created?.draftId ?? null;
 }
 
 // Pin absence too: a later question must never claim an earlier capture.
@@ -295,27 +315,25 @@ export function SnapShotCoordinator() {
   };
 
   const resolveTarget = async (): Promise<CaptureTarget | null> => {
+    const destination = getClientSettings().snapShotDestination;
     const routeTarget = readLastRouteTarget();
-    const lastTarget = readSettledTarget(routeTarget);
-    if (lastTarget) {
-      const existingTarget = resolveExistingSnapShotTarget(lastTarget, routeThreadRef);
-      if (existingTarget) {
-        settleTarget(routeTarget, existingTarget);
-        return existingTarget;
-      }
-      settleTarget(routeTarget, null);
-    }
-    const projectRef = resolveThreadActionProjectRef({
-      activeDraftThread,
-      activeThread: activeThread ?? undefined,
-      defaultProjectRef,
-      handleNewThread,
+    const lastTarget = destination === "current-draft" ? readSettledTarget(routeTarget) : null;
+    const target = await resolveSnapShotCaptureTarget({
+      destination,
+      lastTarget,
+      routeThreadRef,
+      projectRef: resolveThreadActionProjectRef({
+        activeDraftThread,
+        activeThread: activeThread ?? undefined,
+        defaultProjectRef,
+        handleNewThread,
+      }),
+      startNewThread: handleNewThread,
     });
-    if (!projectRef) return null;
-    const created = await handleNewThread(projectRef);
-    if (!created) return null;
-    settleTarget(routeTarget, created.draftId);
-    return created.draftId;
+    if (destination === "current-draft" && (lastTarget || target)) {
+      settleTarget(routeTarget, target);
+    }
+    return target;
   };
 
   const resolveCaptureTarget = () => resolveSnapShotTargetOnce(targetResolutionRef, resolveTarget);
@@ -436,7 +454,7 @@ export function SnapShotCoordinator() {
           const current = readSettledTarget(readLastRouteTarget());
           const target = current ? resolveExistingSnapShotTarget(current, routeThreadRef) : null;
           // Creating a new draft would navigate the renderer before a self-capture finishes.
-          if (target) {
+          if (target && getClientSettings().snapShotDestination === "current-draft") {
             resolveSnapShotAttachmentTarget(questionPinsRef.current, event.id, target);
             void resolveSnapShotDeliveryTarget(captureTargetsRef.current, event.id, () =>
               Promise.resolve(target),

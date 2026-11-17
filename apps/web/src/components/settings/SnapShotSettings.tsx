@@ -4,11 +4,13 @@ import {
   type ClientSettingsPatch,
   type DesktopSnapShotShortcutAvailability,
   type DesktopSnapShotSetupAction,
+  SnapShotDestination,
   type SnapShotShortcut,
 } from "@t3tools/contracts";
 import { PlayIcon } from "lucide-react";
 import { settlePromise } from "@t3tools/client-runtime/state/runtime";
 import * as Cause from "effect/Cause";
+import * as Schema from "effect/Schema";
 import { useContext, useRef, useState } from "react";
 
 import { useClientSettings, updateClientSettings } from "../../hooks/useSettings";
@@ -63,6 +65,13 @@ import {
 
 const soundOptionRowClassName = "grid grid-cols-[1fr_auto]";
 
+const isSnapShotDestination = Schema.is(SnapShotDestination);
+
+const snapShotDestinationLabels: Record<SnapShotDestination, string> = {
+  "current-draft": "Add to current draft",
+  "new-thread": "Start a new thread",
+};
+
 type ShortcutCheck =
   | { readonly status: "idle"; readonly availability: null }
   | {
@@ -81,6 +90,7 @@ type ShortcutCheck =
 export function SnapShotSettings() {
   const settings = useClientSettings((current) => ({
     snapShotAnimations: current.snapShotAnimations,
+    snapShotDestination: current.snapShotDestination,
     snapShotEnabled: current.snapShotEnabled,
     snapShotFlash: current.snapShotFlash,
     snapShotIncludeAccessibility: current.snapShotIncludeAccessibility,
@@ -468,6 +478,41 @@ export function SnapShotSettings() {
                       ) : null}
                     </>
                   )
+                }
+              />
+              <SettingsRow
+                {...searchableSetting("snap-shot-destination")}
+                description="Choose where a new snapshot goes."
+                control={
+                  <Menu>
+                    <MenuTrigger
+                      aria-label={
+                        "After a snapshot: " +
+                        snapShotDestinationLabels[settings.snapShotDestination]
+                      }
+                      render={<SelectButton size="sm" />}
+                      className="w-auto min-w-0"
+                      disabled={!captureAvailable}
+                    >
+                      {snapShotDestinationLabels[settings.snapShotDestination]}
+                    </MenuTrigger>
+                    <MenuPopup align="end">
+                      <MenuRadioGroup
+                        onValueChange={(value) => {
+                          if (isSnapShotDestination(value)) {
+                            void save({ snapShotDestination: value });
+                          }
+                        }}
+                        value={settings.snapShotDestination}
+                      >
+                        {SnapShotDestination.literals.map((destination) => (
+                          <MenuRadioItem key={destination} closeOnClick value={destination}>
+                            {snapShotDestinationLabels[destination]}
+                          </MenuRadioItem>
+                        ))}
+                      </MenuRadioGroup>
+                    </MenuPopup>
+                  </Menu>
                 }
               />
               <SettingsRow

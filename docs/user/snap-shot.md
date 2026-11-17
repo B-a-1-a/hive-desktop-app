@@ -1,9 +1,9 @@
 # SnapShots
 
-A SnapShot captures the window you are working in and attaches it to your current draft. The
-attachment carries the app name and window title, and when available the app icon and the window's
-accessibility data (its controls, text, and their positions in the image). Agents can use that data
-to reason about the screenshot.
+A SnapShot captures the window you are working in and attaches it to your current draft or to a
+new thread. The attachment carries the app name and window title, and when available the app icon
+and the window's accessibility data (its controls, text, and their positions in the image). Agents
+can use that data to reason about the screenshot.
 
 SnapShots are off by default and available in the desktop app on macOS, Windows, and Linux with
 Wayland. X11 sessions are not supported.
@@ -24,13 +24,24 @@ Turning capture off releases the shortcut. It does not uninstall a helper or ext
 ## Taking a capture
 
 Switch to the window you want and press the shortcut. The default on macOS and Windows is both
-Shift keys together. T3 Code attaches the image to your draft and brings itself forward. If no thread
-is open it starts a draft in the current project.
+Shift keys together. Hive brings itself forward with the image attached and the message box ready
+to type in.
+
+**After a snapshot** in Settings chooses where the image goes:
+
+- **Add to current draft** (the default) attaches it to the thread or draft you last had open. If
+  none was open, Hive starts a new thread draft.
+- **Start a new thread** always opens a new thread draft with the image attached, so you can
+  capture any app and say what you want done. The new thread uses the project you last worked in.
+  If an empty new-thread draft already exists for that project, Hive reuses it.
+
+Either way, a capture needs a project. If you have none, Hive tells you to add one first.
 
 Pressing the shortcut while T3 Code is in front captures T3 Code itself.
 
 Pending captures are kept on disk until the attachment is saved to the draft, so a capture survives
-closing the app mid-way and is attached on the next launch. Captures rejected because the image is
+closing the app mid-way and is attached on the next launch, following the **After a snapshot**
+choice in effect then. Captures rejected because the image is
 too large are discarded.
 
 ## Changing the shortcut

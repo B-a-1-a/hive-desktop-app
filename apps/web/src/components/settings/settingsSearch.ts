@@ -927,6 +927,13 @@ export const SETTINGS_SEARCH_ITEMS = [
     targetId: "snap-shot-enabled",
   },
   {
+    id: "snap-shot-destination",
+    title: "After a snapshot",
+    to: "/settings/snap-shot",
+    targetId: "snap-shot-enabled",
+    searchTerms: ["capture new thread current draft attach start"],
+  },
+  {
     id: "snap-shot-sound",
     title: "Capture sound",
     to: "/settings/snap-shot",
