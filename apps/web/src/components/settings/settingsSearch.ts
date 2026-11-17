@@ -29,6 +29,7 @@ export type SettingsPath =
   | "/settings/threads"
   | "/settings/browser"
   | "/settings/devices"
+  | "/settings/computer-use"
   | "/settings/scheduled-tasks"
   | "/settings/source-control"
   | "/settings/worktrees"
@@ -104,6 +105,7 @@ export const SETTINGS_SECTION_LABELS: Readonly<Record<SettingsPath, string>> = {
   "/settings/threads": "Threads",
   "/settings/browser": "Browser",
   "/settings/devices": "Devices",
+  "/settings/computer-use": "Computer use",
   "/settings/scheduled-tasks": "Scheduled tasks",
   "/settings/source-control": "Source control",
   "/settings/worktrees": "Worktrees",
@@ -141,6 +143,7 @@ export const SETTINGS_NAV_GROUPS: ReadonlyArray<{
       "/settings/threads",
       "/settings/browser",
       "/settings/devices",
+      "/settings/computer-use",
       "/settings/scheduled-tasks",
     ],
   },
@@ -1008,6 +1011,13 @@ export const SETTINGS_SEARCH_ITEMS = [
     searchTerms: ["device hub simulator emulator ios android install start version"],
   },
   {
+    id: "computer-use",
+    title: "Let agents use apps on this computer",
+    to: "/settings/computer-use",
+    targetId: "computer-use",
+    searchTerms: ["computer use desktop apps agent-desktop accessibility screen recording cursor"],
+  },
+  {
     id: "device-platform-support",
     title: "Local simulators",
     to: "/settings/devices",
@@ -1348,6 +1358,7 @@ const SETTINGS_CATEGORY_SCOPES: Readonly<Record<SettingsPath, SettingsSearchScop
   "/settings/threads": null,
   "/settings/browser": null,
   "/settings/devices": null,
+  "/settings/computer-use": null,
   "/settings/source-control": "environment-defaults",
   "/settings/worktrees": "project-defaults",
   "/settings/connections": "connections",

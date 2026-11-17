@@ -22,6 +22,10 @@ export const CLIENT_GUARDED_RPC_SCOPES = {
   // Stopping a server signals its processes, as closing a terminal does.
   [WS_METHODS.previewStopLocalServer]: AuthTerminalOperateScope,
   [WS_METHODS.serverRunStorageCleanup]: AuthSettingsWriteScope,
+  // Turning Computer use on lets agents operate apps on the host machine.
+  [WS_METHODS.computerUseConfigure]: AuthSettingsWriteScope,
+  // Ending a session stops its cursor overlay, as closing a terminal stops its process.
+  [WS_METHODS.computerUseCloseSession]: AuthOrchestrationOperateScope,
   // Restarts the server, as an update does.
   [WS_METHODS.serverReclaimDatabaseSpace]: AuthEnvironmentMaintainScope,
   [WS_METHODS.serverCheckOtlpEndpoint]: AuthSettingsWriteScope,

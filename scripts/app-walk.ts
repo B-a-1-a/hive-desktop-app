@@ -56,6 +56,7 @@ const SETTINGS: ReadonlyArray<readonly [string, string]> = [
   ["threads", "Threads"],
   ["browser", "Browser"],
   ["devices", "Devices"],
+  ["computer-use", "Computer use"],
   ["scheduled-tasks", "Scheduled tasks"],
   ["projects", "Projects"],
   ["source-control", "Source control"],

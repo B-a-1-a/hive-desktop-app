@@ -291,6 +291,12 @@ import {
   PreviewSessionSnapshot,
 } from "./preview.ts";
 import {
+  ComputerUseCloseSessionInput,
+  ComputerUseConfigureInput,
+  ComputerUseError,
+  ComputerUseState,
+} from "./computerUse.ts";
+import {
   DeviceActionInput,
   DeviceCloseInput,
   DeviceConfigureInput,
@@ -491,6 +497,10 @@ export const WS_METHODS = {
   previewReportProfiles: "preview.reportProfiles",
   previewReportStatus: "preview.reportStatus",
   previewStopLocalServer: "preview.stopLocalServer",
+
+  computerUseGetState: "computerUse.getState",
+  computerUseConfigure: "computerUse.configure",
+  computerUseCloseSession: "computerUse.closeSession",
 
   deviceConfigure: "device.configure",
   deviceList: "device.list",
@@ -1728,6 +1738,24 @@ const WsDeviceListRpc = Rpc.make(WS_METHODS.deviceList, {
   error: Schema.Union([DeviceError, EnvironmentAuthorizationError]),
 });
 
+const WsComputerUseGetStateRpc = Rpc.make(WS_METHODS.computerUseGetState, {
+  payload: Schema.Struct({}),
+  success: ComputerUseState,
+  error: Schema.Union([ComputerUseError, EnvironmentAuthorizationError]),
+});
+
+const WsComputerUseConfigureRpc = Rpc.make(WS_METHODS.computerUseConfigure, {
+  payload: ComputerUseConfigureInput,
+  success: ComputerUseState,
+  error: Schema.Union([ComputerUseError, EnvironmentAuthorizationError]),
+});
+
+const WsComputerUseCloseSessionRpc = Rpc.make(WS_METHODS.computerUseCloseSession, {
+  payload: ComputerUseCloseSessionInput,
+  success: ComputerUseState,
+  error: Schema.Union([ComputerUseError, EnvironmentAuthorizationError]),
+});
+
 const WsDeviceConfigureRpc = Rpc.make(WS_METHODS.deviceConfigure, {
   payload: DeviceConfigureInput,
   success: DeviceServiceState,
@@ -2245,6 +2273,9 @@ export const WsRpcGroup = RpcGroup.make(
   WsSubscribePreviewEventsRpc,
   WsPreviewStopLocalServerRpc,
   WsSubscribeDiscoveredLocalServersRpc,
+  WsComputerUseGetStateRpc,
+  WsComputerUseConfigureRpc,
+  WsComputerUseCloseSessionRpc,
   WsDeviceConfigureRpc,
   WsDeviceListRpc,
   WsDeviceTestHostRpc,

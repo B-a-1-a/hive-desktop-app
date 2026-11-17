@@ -46,7 +46,7 @@ export class DeviceToolchainInstallError extends Schema.TaggedError<DeviceToolch
   }
 }
 
-interface ToolSpec {
+export interface ToolSpec {
   readonly name: string;
   readonly version: string;
   readonly entry: ReadonlyArray<string>;
@@ -185,6 +185,23 @@ const ensureTool = Effect.fn("DeviceToolchain.ensureTool")(function* (
   const paths = deviceToolchainPaths(path, baseDir);
   return yield* installLock.withPermit(installTool(spec, select(paths)));
 });
+
+/** Installs any pinned npm CLI the way the device tools are, sharing their install lock. */
+export const ensurePinnedNpmTool = Effect.fn("DeviceToolchain.ensurePinnedNpmTool")(function* (
+  baseDir: string,
+  spec: ToolSpec,
+) {
+  const path = yield* Path.Path;
+  return yield* installLock.withPermit(installTool(spec, toolPaths(path, baseDir, spec)));
+});
+
+export const isPinnedNpmToolInstalled = Effect.fn("DeviceToolchain.isPinnedNpmToolInstalled")(
+  function* (baseDir: string, spec: ToolSpec) {
+    const fs = yield* FileSystem.FileSystem;
+    const path = yield* Path.Path;
+    return yield* isInstalled(fs, toolPaths(path, baseDir, spec), spec.version);
+  },
+);
 
 export const ensureDeviceHub = (baseDir: string) =>
   ensureTool(baseDir, HUB_SPEC, (paths) => paths.hub);
