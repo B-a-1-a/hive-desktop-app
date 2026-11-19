@@ -1,6 +1,7 @@
 import * as NodeCrypto from "@effect/platform-node/NodeCrypto";
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import { expect, it } from "@effect/vitest";
+import * as HostProcess from "@t3tools/shared/HostProcess";
 import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
@@ -51,9 +52,14 @@ const writeFile = Effect.fn("test.writeFile")(function* (file: string, content =
   yield* fs.writeFileString(file, content);
 });
 
+/** The launcher script next to the command `open` returns (`agent-browser.cmd` on Windows). */
+const launcherScript = (command: string) =>
+  command.replace(/agent-browser(\.cmd)?$/, "agent-browser-launcher.mjs");
+
 /**
  * A temp Hive home with agent-browser already installed (so nothing is downloaded) and an
- * Applications folder holding Chrome and Firefox. /tmp keeps the socket folder path short.
+ * Applications folder holding Chrome and Firefox. On macOS and Linux, /tmp keeps the socket
+ * folder path short; Windows has no /tmp and no socket path limit, so it uses the system temp.
  */
 const fixture = Effect.fn("test.fixture")(function* (
   settings: { enableBrowserUse?: boolean; browserUseBrowserId?: string | null } = {
@@ -65,7 +71,11 @@ const fixture = Effect.fn("test.fixture")(function* (
 ) {
   const fs = yield* FileSystem.FileSystem;
   const path = yield* Path.Path;
-  const tempDir = yield* fs.makeTempDirectoryScoped({ directory: "/tmp", prefix: "hive-bu-" });
+  const platform = yield* HostProcess.Platform;
+  const tempDir = yield* fs.makeTempDirectoryScoped({
+    ...(platform === "win32" ? {} : { directory: "/tmp" }),
+    prefix: "hive-bu-",
+  });
   const baseDir = path.join(tempDir, nested);
   const apps = path.join(baseDir, "Applications");
   yield* writeFile(path.join(apps, CHROME));
@@ -224,9 +234,7 @@ it.effect("parallel sessions get their own launcher and profile, and close indep
       "about:blank",
     ]);
 
-    const launcher = yield* fs.readFileString(
-      first.command.replace(/agent-browser$/, "agent-browser-launcher.mjs"),
-    );
+    const launcher = yield* fs.readFileString(launcherScript(first.command));
     expect(launcher).toContain(JSON.stringify(first.session.sessionId));
     expect(launcher).not.toContain(second.session.sessionId);
     expect(launcher).toContain("--headed");
@@ -258,12 +266,23 @@ it.effect("parallel sessions get their own launcher and profile, and close indep
 it.effect("a deep data folder still opens sessions, with sockets in a short folder", () =>
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
-    const { service, roots } = yield* fixture(undefined, 0, "a".repeat(40) + "/" + "b".repeat(40));
-    const { command } = yield* service.open({ threadId: "t1" }).pipe(withRoots(roots));
-    const launcher = yield* fs.readFileString(
-      command.replace(/agent-browser$/, "agent-browser-launcher.mjs"),
+    const path = yield* Path.Path;
+    const { service, roots, baseDir } = yield* fixture(
+      undefined,
+      0,
+      "a".repeat(40) + "/" + "b".repeat(40),
     );
-    const socketDir = /"AGENT_BROWSER_SOCKET_DIR":"([^"]+)"/.exec(launcher)?.[1];
+    const { command } = yield* service.open({ threadId: "t1" }).pipe(withRoots(roots));
+    const launcher = yield* fs.readFileString(launcherScript(command));
+    // The launcher embeds paths as JSON strings, so Windows backslashes appear doubled.
+    const socketDir = /"AGENT_BROWSER_SOCKET_DIR":"((?:[^"\\]|\\.)+)"/.exec(launcher)?.[1];
+    if ((yield* HostProcess.Platform) === "win32") {
+      // Windows has no Unix socket path limit, so the socket folder stays in the data folder.
+      const asJson = (value: string) => JSON.stringify(value).slice(1, -1);
+      expect(socketDir?.startsWith(asJson(baseDir))).toBe(true);
+      expect(socketDir?.endsWith(asJson(path.join("browser-use", "s")))).toBe(true);
+      return;
+    }
     expect(socketDir).toMatch(/^\/tmp\/hive-browser-use-[0-9a-f]{8}$/);
     yield* Effect.addFinalizer(() =>
       fs.remove(socketDir!, { recursive: true, force: true }).pipe(Effect.ignore),
