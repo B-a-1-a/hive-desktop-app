@@ -4,7 +4,7 @@ import { isDeveloperThreadDetailsItem } from "../../hive/developerMode.logic";
 
 // Ids are stored in client settings, so never rename one.
 export const THREAD_DETAILS_ITEMS = [
-  { id: "environment", label: "Environment and worktree", defaultVisible: true },
+  { id: "environment", label: "Where this runs", defaultVisible: true },
   { id: "openIn", label: "Open in editor", defaultVisible: true },
   { id: "scripts", label: "Project scripts", defaultVisible: true },
   { id: "branch", label: "Branch and pull request", defaultVisible: true },
