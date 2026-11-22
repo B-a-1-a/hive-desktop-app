@@ -15,8 +15,7 @@ computer**. The first time, Hive downloads the agent-desktop tool it uses to
 read and operate apps. Turn the setting off at any time; Hive stops every app
 session at once.
 
-Computer use works on macOS and Linux. On Windows, the page says it is not
-available yet.
+Computer use works on macOS, Windows, and Linux.
 
 ## Permissions
 
@@ -25,6 +24,12 @@ On macOS, Hive needs **Accessibility** permission to operate other apps. The
 allowed**, open **System Settings → Privacy & Security → Accessibility**, turn
 on Hive, and choose **Check again**. **Screen Recording** is only needed for
 screenshots of an app.
+
+On Windows, there is nothing to grant: **Accessibility** shows **Allowed** unless
+Hive runs inside a restricted sandbox. Agents can see apps that run as
+administrator but cannot operate them; reopen such an app normally first. The
+agent-desktop tool is not signed, so Windows security may warn about it the
+first time it runs.
 
 On Linux, the desktop's accessibility service must be running in the same
 session as Hive.

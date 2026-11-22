@@ -51,7 +51,7 @@ import budget from "./agentContextBudget.json" with { type: "json" };
 const toolHandlerServices = Layer.mergeAll(
   Layer.mock(AssetSigner)({}),
   Layer.mock(DeviceService)({}),
-  Layer.mock(ComputerUseService)({}),
+  Layer.mock(ComputerUseService)({ os: "darwin" }),
   Layer.mock(DocumentText)({}),
   Layer.mock(GitVcsDriver)({}),
   Layer.mock(GitWorkflowService)({}),

@@ -53,14 +53,10 @@ interface PlatformSupport {
   readonly detail: string | null;
 }
 
-/** agent-desktop also ships for Windows; Hive's bound launcher is a POSIX script, so not yet. */
 const platformSupport = (platform: ComputerUsePlatform): PlatformSupport => {
   const arch = platform.arch === "arm64" || platform.arch === "x64";
-  if ((platform.os === "darwin" || platform.os === "linux") && arch) {
+  if ((platform.os === "darwin" || platform.os === "linux" || platform.os === "win32") && arch) {
     return { supported: true, detail: null };
-  }
-  if (platform.os === "win32") {
-    return { supported: false, detail: "Computer use is not available on Windows in Hive yet." };
   }
   return {
     supported: false,
@@ -101,9 +97,33 @@ const permissionState = (value: unknown): ComputerUsePermissionState => {
 
 const shellQuote = (value: string) => `'${value.replaceAll("'", `'"'"'`)}'`;
 
+// cmd.exe reads a .cmd in the OEM code page, so a non-ASCII path in one would not run.
+const CMD_UNSAFE = /[\u0080-\uffff"]/;
+const cmdEscape = (value: string) => value.replaceAll("%", "%%");
+
+const posixLauncher = (app: string, env: Record<string, string>, binary: string) =>
+  [
+    "#!/bin/sh",
+    `# Hive computer-use session for ${app.replaceAll("\n", " ")}. Removed when the session closes.`,
+    ...Object.entries(env).map(([name, value]) => `export ${name}=${shellQuote(value)}`),
+    `exec ${shellQuote(binary)} "$@"`,
+    "",
+  ].join("\n");
+
+const cmdLauncher = (env: Record<string, string>, binary: string) =>
+  [
+    "@echo off",
+    "setlocal EnableExtensions DisableDelayedExpansion",
+    ...Object.entries(env).map(([name, value]) => `set "${name}=${cmdEscape(value)}"`),
+    `"${cmdEscape(binary)}" %*`,
+    "",
+  ].join("\r\n");
+
 export class ComputerUseService extends Context.Service<
   ComputerUseService,
   {
+    /** The OS of the machine whose apps are operated, which decides the launcher's shell syntax. */
+    readonly os: NodeJS.Platform;
     readonly state: Effect.Effect<ComputerUseState>;
     /** Turning it on is the person's consent to install the pinned agent-desktop. */
     readonly configure: (input: {
@@ -145,6 +165,7 @@ export const make = Effect.fn("ComputerUseService.make")(function* (
     FileSystem.FileSystem | Path.Path | ProcessRunner.ProcessRunner
   >();
   const support = platformSupport(platform);
+  const windows = platform.os === "win32";
   const cursorOverlay = options.cursorOverlay ?? true;
 
   const root = path.join(config.stateDir, "computer-use");
@@ -161,7 +182,16 @@ export const make = Effect.fn("ComputerUseService.make")(function* (
     "bin",
   );
   // The native binary directly: the package's Node launcher adds a process and ~125 ms per call.
-  const binary = path.join(packageBin, `agent-desktop-${platform.os}-${platform.arch}`);
+  const packagedBinary = path.join(
+    packageBin,
+    windows
+      ? `agent-desktop-win32-${platform.arch}.exe`
+      : `agent-desktop-${platform.os}-${platform.arch}`,
+  );
+  // agent-desktop starts its Windows cursor overlay only when its own exe is named agent-desktop.
+  const binary = windows
+    ? path.join(root, "runtime", AGENT_DESKTOP_VERSION, "agent-desktop.exe")
+    : packagedBinary;
   const toolEnv: Record<string, string> = {
     AGENT_DESKTOP_HOME: stateRoot,
     ...(platform.os === "darwin"
@@ -222,11 +252,23 @@ export const make = Effect.fn("ComputerUseService.make")(function* (
   const ensureStateRoot = Effect.gen(function* () {
     yield* fs.makeDirectory(stateRoot, { recursive: true });
     // agent-desktop refuses a state root other users can read.
-    yield* fs.chmod(stateRoot, 0o700);
+    if (!windows) yield* fs.chmod(stateRoot, 0o700);
     yield* fs.makeDirectory(launcherRoot, { recursive: true });
   }).pipe(
     Effect.mapError((cause) =>
       fail("tool_failed", "Hive could not prepare its computer-use folder.", cause),
+    ),
+  );
+
+  const ensureRuntimeBinary = Effect.gen(function* () {
+    if (!windows || (yield* fs.exists(binary))) return;
+    yield* fs.makeDirectory(path.dirname(binary), { recursive: true });
+    const temporary = `${binary}.${process.pid}.tmp`;
+    yield* fs.copyFile(packagedBinary, temporary);
+    yield* fs.rename(temporary, binary);
+  }).pipe(
+    Effect.mapError((cause) =>
+      fail("install_failed", "Hive could not prepare agent-desktop for Windows.", cause),
     ),
   );
 
@@ -254,6 +296,7 @@ export const make = Effect.fn("ComputerUseService.make")(function* (
       Effect.mapError((cause) => fail("install_failed", cause.message, cause)),
       Effect.provide(toolchain),
     );
+    yield* ensureRuntimeBinary;
     yield* ensureStateRoot;
   });
 
@@ -383,12 +426,23 @@ export const make = Effect.fn("ComputerUseService.make")(function* (
       if (access.accessibility === "denied") {
         return yield* fail("permission_missing", permissionMessage(platform));
       }
-      const { apps, windows } = yield* listTargets({ app: input.app });
-      const app = apps.find(
-        (candidate) => candidate.name.toLowerCase() === input.app.toLowerCase(),
-      );
+      if (windows && [binary, stateRoot, launcherRoot].some((value) => CMD_UNSAFE.test(value))) {
+        return yield* fail(
+          "tool_failed",
+          `Computer use cannot run from ${root}, because Windows command scripts do not support non-ASCII characters in a path.`,
+        );
+      }
+      const targets = yield* listTargets({});
+      const wanted = appKey(input.app);
+      // Windows Store apps run inside ApplicationFrameHost.exe, so only their windows carry the app name.
+      const appName =
+        targets.apps.find((candidate) => appKey(candidate.name) === wanted)?.name ??
+        (windows
+          ? targets.windows.find((window) => appKey(window.app) === wanted)?.app
+          : undefined);
+      const app = appName === undefined ? undefined : { name: appName };
       if (app === undefined) {
-        const near = apps.map((candidate) => candidate.name).slice(0, 5);
+        const near = targets.apps.map((candidate) => candidate.name).slice(0, 5);
         return yield* fail(
           "not_found",
           `No open app named ${input.app}.${near.length > 0 ? ` Did you mean: ${near.join(", ")}?` : ""} Call computer_list for names.`,
@@ -396,7 +450,9 @@ export const make = Effect.fn("ComputerUseService.make")(function* (
       }
       if (
         input.windowId !== undefined &&
-        !windows.some((window) => window.id === input.windowId && window.app === app.name)
+        !targets.windows.some(
+          (window) => window.id === input.windowId && appKey(window.app) === appKey(app.name),
+        )
       ) {
         return yield* fail(
           "not_found",
@@ -428,20 +484,19 @@ export const make = Effect.fn("ComputerUseService.make")(function* (
             ? started.created_at
             : yield* Clock.currentTimeMillis,
       };
-      const command = path.join(launcherRoot, sessionId, "agent-desktop");
-      const script = [
-        "#!/bin/sh",
-        `# Hive computer-use session for ${app.name.replaceAll("\n", " ")}. Removed when the session closes.`,
-        ...Object.entries({ ...toolEnv, AGENT_DESKTOP_SESSION: sessionId }).map(
-          ([name, value]) => `export ${name}=${shellQuote(value)}`,
-        ),
-        `exec ${shellQuote(binary)} "$@"`,
-        "",
-      ].join("\n");
+      const command = path.join(
+        launcherRoot,
+        sessionId,
+        windows ? "agent-desktop.cmd" : "agent-desktop",
+      );
+      const sessionEnv = { ...toolEnv, AGENT_DESKTOP_SESSION: sessionId };
+      const script = windows
+        ? cmdLauncher(sessionEnv, binary)
+        : posixLauncher(app.name, sessionEnv, binary);
       yield* Effect.gen(function* () {
         yield* fs.makeDirectory(path.dirname(command), { recursive: true });
         yield* fs.writeFileString(command, script);
-        yield* fs.chmod(command, 0o700);
+        if (!windows) yield* fs.chmod(command, 0o700);
       }).pipe(
         Effect.mapError((cause) =>
           fail("tool_failed", "Hive could not write the session command.", cause),
@@ -473,7 +528,8 @@ export const make = Effect.fn("ComputerUseService.make")(function* (
 
   // A crashed server leaves sessions (and their cursor overlays) running; end them on start.
   if (support.supported && (yield* installed)) {
-    yield* run(["session", "list"]).pipe(
+    yield* ensureRuntimeBinary.pipe(
+      Effect.andThen(run(["session", "list"])),
       Effect.flatMap((data) => {
         const listed = record(data).sessions;
         const stale = (Array.isArray(listed) ? listed.map(record) : []).filter(
@@ -492,6 +548,7 @@ export const make = Effect.fn("ComputerUseService.make")(function* (
   yield* Effect.addFinalizer(() => endAll);
 
   return ComputerUseService.of({
+    os: platform.os,
     state,
     configure,
     listTargets,
@@ -501,9 +558,17 @@ export const make = Effect.fn("ComputerUseService.make")(function* (
   });
 });
 
-const permissionMessage = (platform: ComputerUsePlatform) =>
-  platform.os === "darwin"
-    ? "Hive needs Accessibility permission to operate apps. Ask the person to turn on Hive in System Settings > Privacy & Security > Accessibility, then try again."
-    : "The accessibility service is not available in this desktop session. Hive needs it to operate apps.";
+const permissionMessage = (platform: ComputerUsePlatform) => {
+  if (platform.os === "darwin") {
+    return "Hive needs Accessibility permission to operate apps. Ask the person to turn on Hive in System Settings > Privacy & Security > Accessibility, then try again.";
+  }
+  if (platform.os === "win32") {
+    return "Windows blocked Hive from reading apps (UI Automation access denied). This happens when Hive runs in a restricted sandbox; ask the person to run Hive normally.";
+  }
+  return "The accessibility service is not available in this desktop session. Hive needs it to operate apps.";
+};
+
+/** agent-desktop matches app names case-insensitively, and on Windows with or without `.exe`. */
+const appKey = (name: string) => name.toLowerCase().replace(/\.exe$/, "");
 
 export const layer = Layer.effect(ComputerUseService, make());

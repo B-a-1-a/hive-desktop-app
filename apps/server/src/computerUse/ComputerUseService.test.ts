@@ -18,11 +18,15 @@ import { AGENT_DESKTOP_VERSION, make } from "./ComputerUseService.ts";
 
 type Platform = { readonly os: NodeJS.Platform; readonly arch: NodeJS.Architecture };
 const MAC: Platform = { os: "darwin", arch: "arm64" };
+const WINDOWS: Platform = { os: "win32", arch: "x64" };
+const PACKAGED_BINARIES = ["agent-desktop", "agent-desktop-win32-x64.exe"];
 
 interface FakeOptions {
   readonly accessibility?: "granted" | "denied";
   /** Sessions a previous server left open in Hive's agent-desktop state root. */
   readonly leftOver?: ReadonlyArray<string>;
+  /** Answer with the app and window shapes agent-desktop returns on Windows. */
+  readonly windows?: boolean;
 }
 
 /** A fake agent-desktop and npm at the process boundary. */
@@ -52,7 +56,9 @@ function fakeCli(fs: FileSystem.FileSystem, path: Path.Path, options: FakeOption
     return fs
       .makeDirectory(bin, { recursive: true })
       .pipe(
-        Effect.andThen(fs.writeFileString(path.join(bin, "agent-desktop"), "")),
+        Effect.andThen(
+          Effect.forEach(PACKAGED_BINARIES, (name) => fs.writeFileString(path.join(bin, name), "")),
+        ),
         Effect.orDie,
         Effect.as(""),
       );
@@ -71,6 +77,14 @@ function fakeCli(fs: FileSystem.FileSystem, path: Path.Path, options: FakeOption
           automation: { state: "unknown" },
         });
       case "list-apps":
+        if (options.windows) {
+          return envelope("list-apps", {
+            apps: [
+              { name: "Notepad.exe", pid: 1, presentation: "foreground" },
+              { name: "ApplicationFrameHost.exe", pid: 2, presentation: "foreground" },
+            ],
+          });
+        }
         return envelope("list-apps", {
           apps: [
             { name: "Finder", pid: 1, bundle_id: "com.apple.finder", presentation: "foreground" },
@@ -79,6 +93,12 @@ function fakeCli(fs: FileSystem.FileSystem, path: Path.Path, options: FakeOption
           ],
         });
       case "list-windows":
+        if (options.windows) {
+          return envelope("list-windows", [
+            { id: "w-10", app_name: "Notepad.exe", title: "Notes - Notepad", visible: true },
+            { id: "w-11", app_name: "CalculatorApp.exe", title: "Calculator", visible: true },
+          ]);
+        }
         return envelope("list-windows", [
           { id: "w-1", app_name: "Finder", title: "Downloads", is_focused: true, visible: true },
           { id: "w-2", app_name: "Notes", title: "Notes", is_focused: false, visible: true },
@@ -134,7 +154,9 @@ const preinstall = (baseDir: string) =>
     yield* fs.makeDirectory(path.join(dir, "node_modules/agent-desktop/bin"), {
       recursive: true,
     });
-    yield* fs.writeFileString(path.join(dir, "node_modules/agent-desktop/bin/agent-desktop"), "");
+    for (const name of PACKAGED_BINARIES) {
+      yield* fs.writeFileString(path.join(dir, "node_modules/agent-desktop/bin", name), "");
+    }
     yield* fs.writeFileString(path.join(dir, ".install-complete"), `${AGENT_DESKTOP_VERSION}\n`);
   });
 
@@ -145,6 +167,7 @@ const withService = <A, E>(
     readonly enabled: boolean;
     readonly installed: boolean;
     readonly platform?: Platform;
+    readonly baseDirPrefix?: string;
   },
   use: (
     service: Effect.Success<ReturnType<typeof make>>,
@@ -152,13 +175,16 @@ const withService = <A, E>(
       readonly cli: ReturnType<typeof fakeCli>;
       readonly scope: Scope.Closeable;
       readonly fs: FileSystem.FileSystem;
+      readonly baseDir: string;
     },
   ) => Effect.Effect<A, E>,
 ) =>
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
     const cli = fakeCli(fs, yield* Path.Path, input.fake);
-    const baseDir = yield* fs.makeTempDirectoryScoped({ prefix: "hive-computer-use-" });
+    const baseDir = yield* fs.makeTempDirectoryScoped({
+      prefix: input.baseDirPrefix ?? "hive-computer-use-",
+    });
     if (input.installed) yield* preinstall(baseDir);
     const scope = yield* Scope.make();
     const platform = input.platform ?? MAC;
@@ -168,7 +194,7 @@ const withService = <A, E>(
       Effect.provideService(HostProcess.Architecture, platform.arch),
       Effect.provide(provideDeps(cli, { enableComputerUse: input.enabled }, baseDir)),
     );
-    return yield* use(service, { cli, scope, fs }).pipe(
+    return yield* use(service, { cli, scope, fs, baseDir }).pipe(
       Effect.ensuring(Scope.close(scope, Exit.void)),
     );
   }).pipe(Effect.scoped, Effect.provide(NodeServices.layer));
@@ -287,17 +313,99 @@ describe("ComputerUseService", () => {
     );
   });
 
+  it.effect("on Windows, runs agent-desktop under its own name through a .cmd launcher", () => {
+    return withService(
+      {
+        fake: { windows: true },
+        enabled: true,
+        installed: true,
+        platform: WINDOWS,
+        // cmd.exe expands %, so the launcher must escape it.
+        baseDirPrefix: "hive-computer-use-50%-",
+      },
+      (service, { cli, fs, baseDir }) =>
+        Effect.gen(function* () {
+          expect((yield* service.state).platform).toEqual({
+            os: "win32",
+            supported: true,
+            detail: null,
+          });
+          const notepad = yield* service.open({ threadId: thread, app: "notepad" });
+          expect(notepad.session.target).toEqual({ app: "Notepad.exe" });
+          expect(notepad.command.endsWith("agent-desktop.cmd")).toBe(true);
+
+          const runtime = cli.toolCalls("start")[0]!.command;
+          expect(runtime.startsWith(baseDir)).toBe(true);
+          expect(runtime.replaceAll("\\", "/")).toMatch(
+            new RegExp(
+              `/runtime/${AGENT_DESKTOP_VERSION.replaceAll(".", "\\.")}/agent-desktop\\.exe$`,
+            ),
+          );
+          expect(yield* fs.exists(runtime)).toBe(true);
+
+          const script = yield* fs.readFileString(notepad.command);
+          expect(script.split("\r\n")).toEqual([
+            "@echo off",
+            "setlocal EnableExtensions DisableDelayedExpansion",
+            expect.stringMatching(/^set "AGENT_DESKTOP_HOME=.*50%%-.*"$/),
+            `set "AGENT_DESKTOP_SESSION=${notepad.session.id}"`,
+            `"${runtime.replaceAll("%", "%%")}" %*`,
+            "",
+          ]);
+
+          // Store apps are listed only as ApplicationFrameHost.exe; their windows carry the name.
+          const calculator = yield* service.open({
+            threadId: thread,
+            app: "CalculatorApp",
+            windowId: "w-11",
+          });
+          expect(calculator.session.target).toEqual({ app: "CalculatorApp.exe", windowId: "w-11" });
+
+          // Each session gets its own launcher that pins only its own session id.
+          expect(calculator.command).not.toBe(notepad.command);
+          const pinned = (text: string, id: string) =>
+            text.replace(`AGENT_DESKTOP_SESSION=${id}"`, 'AGENT_DESKTOP_SESSION=<id>"');
+          expect(
+            pinned(yield* fs.readFileString(calculator.command), calculator.session.id),
+          ).toEqual(pinned(script, notepad.session.id));
+
+          yield* service.close(notepad.session.id);
+          expect(yield* fs.exists(notepad.command)).toBe(false);
+          expect(yield* fs.exists(calculator.command)).toBe(true);
+        }),
+    );
+  });
+
+  it.effect("on Windows, refuses a data path that a .cmd launcher cannot run", () => {
+    return withService(
+      {
+        fake: { windows: true },
+        enabled: true,
+        installed: true,
+        platform: WINDOWS,
+        baseDirPrefix: "hive-computer-use-é-",
+      },
+      (service, { cli }) =>
+        Effect.gen(function* () {
+          const error = yield* service.open({ threadId: thread, app: "notepad" }).pipe(Effect.flip);
+          expect(error.code).toBe("tool_failed");
+          expect(error.message).toContain("non-ASCII");
+          expect(cli.toolCalls("start")).toEqual([]);
+        }),
+    );
+  });
+
   it.effect(
     "says an unsupported platform is unsupported without installing or running anything",
     () => {
       return withService(
-        { enabled: false, installed: false, platform: { os: "win32", arch: "x64" } },
+        { enabled: false, installed: false, platform: { os: "freebsd", arch: "x64" } },
         (service, { cli }) =>
           Effect.gen(function* () {
             expect((yield* service.state).platform).toEqual({
-              os: "win32",
+              os: "freebsd",
               supported: false,
-              detail: "Computer use is not available on Windows in Hive yet.",
+              detail: "Computer use is not available on this computer (freebsd x64).",
             });
             const error = yield* service.configure({ enabled: true }).pipe(Effect.flip);
             expect(error.code).toBe("unsupported_platform");

@@ -793,7 +793,7 @@ const layerUnusedConfigRpcServices = Layer.mergeAll(
   Layer.mock(CommandOutputHub.CommandOutputHub)({}),
   Layer.mock(CodexInstallation.CodexInstallation)({ managedDirectory: "/unused" }),
   Layer.mock(DeviceService.DeviceService)({}),
-  Layer.mock(ComputerUseService.ComputerUseService)({}),
+  Layer.mock(ComputerUseService.ComputerUseService)({ os: "darwin" }),
   Layer.mock(EnvironmentTheme.EnvironmentThemeService)({}),
   Layer.mock(GitWorkflowService.GitWorkflowService)({}),
   Layer.mock(HostResources.HostResources)({}),

@@ -12,20 +12,36 @@ const threadId = McpInvocationContext.McpInvocationContext.pipe(
 );
 
 /** How to drive the session, returned with it so it costs nothing in threads that never open one. */
-function computerUseQuickStart(target: ComputerUseTarget, command: string): string {
+export function computerUseQuickStart(
+  target: ComputerUseTarget,
+  command: string,
+  os: NodeJS.Platform,
+): string {
   const { app } = target;
+  const windows = os === "win32";
   // An app with several windows refuses a bare --app snapshot as AMBIGUOUS_TARGET.
   const scope =
     target.windowId === undefined
       ? `--app ${JSON.stringify(app)}`
       : `--window-id ${target.windowId}`;
-  const run = (args: string) => `  '${command.replaceAll("'", `'"'"'`)}' ${args}`;
+  // PowerShell runs a quoted path only after `&`, and reads a bare @token as splatting.
+  const run = windows
+    ? (args: string) => `  & '${command.replaceAll("'", "''")}' ${args}`
+    : (args: string) => `  '${command.replaceAll("'", `'"'"'`)}' ${args}`;
+  const ref = (id: string) => (windows ? `'@s8f3k2p9:${id}'` : `@s8f3k2p9:${id}`);
   return [
     `The user is watching you work in ${app}. Every action shows on their screen with a cursor.`,
     `Drive it only with this command; it is bound to this session and needs no --session flag. Use the exact path.`,
     run(`snapshot ${scope} -i --compact`) + "  # accessibility tree with refs",
-    run("click @s8f3k2p9:e8") + "  # a ref from the latest snapshot",
-    run('type @s8f3k2p9:e5 "text"'),
+    run(`click ${ref("e8")}`) + "  # a ref from the latest snapshot",
+    windows
+      ? run(`set-value ${ref("e5")} "text"`) + "  # replaces the field's text"
+      : run(`type ${ref("e5")} "text"`),
+    ...(windows
+      ? [
+          "On Windows, `type` and mouse or keyboard actions such as `hover`, `drag` and `press` need `--headed` before the command and use the real mouse and keyboard. Prefer `click` and `set-value`, which run in the background. In Git Bash, leave out the leading `& `.",
+        ]
+      : []),
     "Take a new snapshot after each action to check it worked. If several windows match, pass --window-id from computer_list. Stay in this app unless the user asks otherwise.",
     "Before your first action, run it with `skills get desktop` and follow that guide. `<command> --help` lists flags.",
     "Ask the user before sending, buying, or deleting anything. Call computer_close when you are done.",
@@ -53,7 +69,7 @@ const handlers = {
       });
       return {
         ...opened,
-        quickStart: computerUseQuickStart(opened.session.target, opened.command),
+        quickStart: computerUseQuickStart(opened.session.target, opened.command, service.os),
       };
     }),
   ),

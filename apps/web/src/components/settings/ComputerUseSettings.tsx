@@ -34,6 +34,31 @@ const PERMISSION_LABELS: Record<
   unknown: { label: "Unknown", variant: "outline" },
 };
 
+const PERMISSION_HELP: Record<
+  "darwin" | "win32" | "other",
+  { readonly accessibility: string; readonly screenRecording: string }
+> = {
+  darwin: {
+    accessibility:
+      "Required. Lets Hive read and operate other apps. Turn on Hive in System Settings > Privacy & Security > Accessibility.",
+    screenRecording:
+      "Only for screenshots of an app. Turn on Hive in System Settings > Privacy & Security > Screen Recording.",
+  },
+  win32: {
+    accessibility:
+      "Lets Hive read and operate other apps. Windows allows this by default; it is only blocked when Hive runs inside a restricted sandbox.",
+    screenRecording: "Not needed on Windows.",
+  },
+  other: {
+    accessibility:
+      "Required. Lets Hive read and operate other apps through the desktop's accessibility service.",
+    screenRecording: "Only for screenshots of an app.",
+  },
+};
+
+const permissionHelp = (os: string | undefined) =>
+  PERMISSION_HELP[os === "darwin" || os === "win32" ? os : "other"];
+
 function PermissionBadge({ state }: { readonly state: ComputerUsePermissionState | null }) {
   const view =
     state === null
@@ -126,20 +151,12 @@ function ComputerUseSettings({ environmentId }: { readonly environmentId: Enviro
         >
           <SettingsRow
             title="Accessibility"
-            description={
-              state?.platform.os === "darwin"
-                ? "Required. Lets Hive read and operate other apps. Turn on Hive in System Settings > Privacy & Security > Accessibility."
-                : "Required. Lets Hive read and operate other apps through the desktop's accessibility service."
-            }
+            description={permissionHelp(state?.platform.os).accessibility}
             control={<PermissionBadge state={permissions?.accessibility ?? null} />}
           />
           <SettingsRow
             title="Screen Recording"
-            description={
-              state?.platform.os === "darwin"
-                ? "Only for screenshots of an app. Turn on Hive in System Settings > Privacy & Security > Screen Recording."
-                : "Only for screenshots of an app."
-            }
+            description={permissionHelp(state?.platform.os).screenRecording}
             control={<PermissionBadge state={permissions?.screenRecording ?? null} />}
           />
           {state?.permissionsDetail ? (
