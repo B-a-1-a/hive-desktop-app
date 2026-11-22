@@ -1,4 +1,6 @@
 import { ThreadContextDragGhost } from "./chat/ThreadContextDragGhost";
+import { useDeveloperMode } from "~/hive/developerMode";
+import { isDeveloperPaletteAction } from "~/hive/developerMode.logic";
 import { threadPullRequestLinkMode } from "@t3tools/client-runtime/thread-pull-request-compatibility";
 import { visibleThreadPullRequests } from "@t3tools/shared/threadPullRequests";
 
@@ -1262,6 +1264,7 @@ function OpenCommandPaletteDialog(props: {
     if (firstOption) startNewProject(firstOption.environmentId, null);
   };
 
+  const developerMode = useDeveloperMode();
   const actionItems: Array<CommandPaletteActionItem | CommandPaletteSubmenuItem> = [];
 
   if (projects.length > 0) {
@@ -1729,7 +1732,12 @@ function OpenCommandPaletteDialog(props: {
     });
   }
 
-  const rootGroups = buildRootGroups({ actionItems, recentThreadItems });
+  const rootGroups = buildRootGroups({
+    actionItems: developerMode
+      ? actionItems
+      : actionItems.filter((item) => !isDeveloperPaletteAction(item.value)),
+    recentThreadItems,
+  });
   // Every setting goes to the palette's own matcher, so settings get the same
   // word starts and typo tolerance as threads.
   const settingsSearchItems: CommandPaletteActionItem[] = settingsForThisPlatform(
