@@ -1,4 +1,5 @@
 import { useAtomValue } from "@effect/atom-react";
+import { useDeveloperMode } from "~/hive/developerMode";
 import { connectionStatusTitle } from "@t3tools/client-runtime/connection";
 import { AsyncResult } from "effect/reactivity";
 import {
@@ -293,15 +294,17 @@ function Field({
   label,
   hint,
   htmlFor,
+  hidden,
   children,
 }: {
   label: string;
   hint?: string;
   htmlFor?: string;
+  hidden?: boolean;
   children: ReactNode;
 }) {
   return (
-    <div className="space-y-1.5">
+    <div className="space-y-1.5" hidden={hidden}>
       <Label className="flex items-baseline justify-between" htmlFor={htmlFor}>
         <span>{label}</span>
         {hint ? (
@@ -1394,11 +1397,14 @@ function ScheduledTaskEditorForm({
     label: "scheduled task upsert",
   });
   const webhookDenial = managedCapabilityDenial(useManagedPolicy(environmentId), "webhookTasks");
+  const developerMode = useDeveloperMode();
   const [draft, setDraft] = useState<DraftState>(() =>
     task
       ? taskToDraft(task)
       : {
           ...EMPTY_DRAFT,
+          // With developer mode off the workspace choice is hidden, so use the project folder.
+          ...(developerMode ? {} : { workspaceMode: "root" as const }),
           projectId: defaultScheduledTaskProjectId(scopedProjects, scope),
         },
   );
@@ -1715,7 +1721,7 @@ function ScheduledTaskEditorForm({
               </Select>
             </Field>
 
-            <Field label="Workspace" htmlFor="scheduled-task-workspace">
+            <Field label="Workspace" htmlFor="scheduled-task-workspace" hidden={!developerMode}>
               <Select
                 value={draft.workspaceMode}
                 onValueChange={(value) =>
@@ -1734,7 +1740,7 @@ function ScheduledTaskEditorForm({
             </Field>
           </div>
 
-          {draft.workspaceMode === "worktree" ? (
+          {developerMode && draft.workspaceMode === "worktree" ? (
             <Field label="Base branch" htmlFor="scheduled-task-base-ref">
               <WorktreeBaseBranchPicker
                 key={`${environmentId}:${selectedProjectId}`}
@@ -1751,7 +1757,7 @@ function ScheduledTaskEditorForm({
               />
             </Field>
           ) : null}
-          {draft.workspaceMode === "existing_worktree" ? (
+          {developerMode && draft.workspaceMode === "existing_worktree" ? (
             <Field label="Checkout path" htmlFor="scheduled-task-checkout">
               <Input
                 id="scheduled-task-checkout"

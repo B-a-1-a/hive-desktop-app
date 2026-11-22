@@ -129,7 +129,6 @@ export const SETTINGS_NAV_GROUPS: ReadonlyArray<{
       "/settings/appearance",
       "/settings/chat",
       "/settings/diffs",
-      "/settings/keybindings",
       "/settings/voice",
       "/settings/snap-shot",
     ],
@@ -149,16 +148,19 @@ export const SETTINGS_NAV_GROUPS: ReadonlyArray<{
     paths: ["/settings/projects", "/settings/source-control", "/settings/worktrees"],
   },
   {
-    heading: "Connections",
+    heading: "Advanced",
     paths: [
+      "/settings/keybindings",
       "/settings/connections",
       "/settings/access",
       ...(isSecretsFeatureEnabled ? (["/settings/secrets"] as const) : []),
+      "/settings/maintenance",
+      "/settings/labs",
     ],
   },
   {
     heading: null,
-    paths: ["/settings/maintenance", "/settings/labs", "/settings/about", "/settings/archived"],
+    paths: ["/settings/about", "/settings/archived"],
   },
 ];
 

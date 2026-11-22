@@ -1,4 +1,5 @@
 import { SettingsGroup } from "./SettingsGroup";
+import { useDeveloperSettingHidden } from "~/hive/developerMode";
 import { ChevronRightIcon } from "lucide-react";
 import { type ReactNode, useState } from "react";
 
@@ -25,6 +26,7 @@ export function FoldedSettingsSection({
   readonly children: ReactNode;
 }) {
   const [open, setOpen] = useState(false);
+  const hiddenByDeveloperMode = useDeveloperSettingHidden(id);
   const searchTargetId = useSettingsSearchTargetId();
   const targetRef = useSettingsSearchTarget<HTMLElement>(id);
   // A search jump lands inside the fold, so open it before the scroll runs.
@@ -33,6 +35,8 @@ export function FoldedSettingsSection({
     setOpenedForTarget(id);
     if (!open) setOpen(true);
   }
+
+  if (hiddenByDeveloperMode) return null;
 
   if (headerPlacement === "outside") {
     return (

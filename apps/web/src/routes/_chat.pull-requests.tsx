@@ -1,4 +1,5 @@
 import type { EnvironmentId, ProjectId } from "@t3tools/contracts";
+import { developerOnlyRoute } from "../hive/developerMode";
 import { createFileRoute } from "@tanstack/react-router";
 
 import { type PullRequestListSort } from "../components/pullRequest/pullRequestListPreferences";
@@ -74,5 +75,5 @@ export const Route = createFileRoute("/_chat/pull-requests")({
       : {}),
     ...pullRequestSearchLabels(raw.labels),
   }),
-  component: PullRequestsPage,
+  component: developerOnlyRoute(PullRequestsPage),
 });

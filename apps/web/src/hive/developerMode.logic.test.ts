@@ -2,7 +2,11 @@ import { DEFAULT_RESOLVED_KEYBINDINGS } from "@t3tools/shared/keybindings";
 import { describe, expect, it } from "vite-plus/test";
 
 import { resolveShortcutCommand, setHiddenShortcutCommands } from "../keybindings";
-import { isDeveloperCommand } from "./developerMode.logic";
+import {
+  isDeveloperAuthScope,
+  isDeveloperCommand,
+  isDeveloperSettingId,
+} from "./developerMode.logic";
 
 const options = { platform: "MacIntel", context: { isDesktop: true } } as const;
 const press = (key: string) => ({
@@ -27,5 +31,27 @@ describe("developer mode shortcuts", () => {
     } finally {
       setHiddenShortcutCommands(null);
     }
+  });
+});
+
+describe("developer mode settings rows", () => {
+  it.each([
+    ["new-threads", true],
+    ["keybinding-terminal.toggle", true],
+    ["keybinding-sidebar.toggle", false],
+    ["provider-instance-codex-runtime", true],
+    ["provider-instance-codex-models", false],
+    ["default-permissions", false],
+  ])("treats %s as a developer setting: %s", (id, expected) => {
+    expect(isDeveloperSettingId(id)).toBe(expected);
+  });
+
+  it("keeps terminal and source control out of pairing links, and leaves task access", () => {
+    expect(
+      ["terminal:read", "terminal:operate", "source-control:write"].every(isDeveloperAuthScope),
+    ).toBe(true);
+    expect(
+      ["orchestration:read", "orchestration:operate", "filesystem:read"].some(isDeveloperAuthScope),
+    ).toBe(false);
   });
 });

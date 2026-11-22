@@ -1,6 +1,6 @@
 import { AuthEnvironmentMaintainScope } from "@t3tools/contracts";
 import { useDeveloperMode } from "~/hive/developerMode";
-import { isDeveloperSettingsPath } from "~/hive/developerMode.logic";
+import { isDeveloperSettingId, isDeveloperSettingsPath } from "~/hive/developerMode.logic";
 
 import { usePrimaryCloudLinkState } from "~/cloud/cloudLinkState";
 import { hasCloudPublicConfig } from "~/cloud/publicConfig";
@@ -77,5 +77,12 @@ export function useAvailableSettingsSearchItems() {
     hasTextGeneratorsEnvironment,
     hasPrimaryEnvironment: primaryEnvironmentId !== null,
   });
-  return developerMode ? items : items.filter((item) => !isDeveloperSettingsPath(item.to));
+  return developerMode
+    ? items
+    : items.filter(
+        (item) =>
+          !isDeveloperSettingsPath(item.to) &&
+          !isDeveloperSettingId(item.id) &&
+          !isDeveloperSettingId(item.targetId ?? ""),
+      );
 }

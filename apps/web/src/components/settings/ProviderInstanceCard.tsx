@@ -1,4 +1,5 @@
 import { Spinner } from "~/components/ui/spinner";
+import { useDeveloperMode } from "~/hive/developerMode";
 
 import {
   AlertTriangleIcon,
@@ -739,6 +740,7 @@ export function ProviderInstanceCard({
   secretSources = NO_SECRET_SOURCES,
   projectOverride,
 }: ProviderInstanceCardProps) {
+  const developerMode = useDeveloperMode();
   const enabled = projectOverride?.effectiveEnabled ?? resolveProviderInstanceEnabled(instance);
   const effectiveProvider = liveProvider && { ...liveProvider, enabled };
   const compatibility = enabled ? liveProvider?.compatibilityAdvisory : undefined;
@@ -1345,6 +1347,7 @@ export function ProviderInstanceCard({
       ) : !driverOption || deriveProviderSettingsFields(driverOption).length > 0 ? (
         <SettingsSection
           title="Runtime"
+          hidden={!developerMode}
           inert={readOnly}
           aria-disabled={readOnly || undefined}
           className={readOnly ? "opacity-50 select-none" : undefined}
@@ -1355,6 +1358,7 @@ export function ProviderInstanceCard({
 
       <SettingsSection
         title="Environment"
+        hidden={!developerMode}
         inert={readOnly || instanceLocks?.wholeEnvironment}
         aria-disabled={readOnly || instanceLocks?.wholeEnvironment || undefined}
         className={readOnly ? "opacity-50 select-none" : undefined}
