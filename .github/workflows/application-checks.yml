@@ -61,6 +61,9 @@ jobs:
           apps/server/src/telemetry/AnalyticsService.test.ts
           packages/client-runtime/src/authorization/remote.test.ts
           apps/web/src/components/GitHubStarPrompt.test.ts
+          apps/web/src/hive/developerMode.logic.test.ts
+          apps/web/src/components/chat/threadDetailsItems.test.ts
+          apps/web/src/keybindings.test.ts
           apps/desktop/src/app/DesktopLifecycle.test.ts
           apps/desktop/src/snapShot/GnomeCaptureSetup.test.ts
           apps/server/src/serverRuntimeState.test.ts
