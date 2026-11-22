@@ -1,4 +1,5 @@
 import { SettingsGroup } from "./SettingsGroup";
+import { useDeveloperSettingHidden } from "~/hive/developerMode";
 import { AuthSettingsWriteScope } from "@t3tools/contracts";
 import { usePrimaryEnvironmentId, usePrimaryEnvironment } from "../../state/environments";
 import { useEnvironmentScope, useEnvironmentsWithScope } from "../../state/session";
@@ -224,6 +225,7 @@ export function SettingsSection({
   children: ReactNode;
 }) {
   const targetRef = useSettingsSearchTarget<HTMLElement>(sectionProps.id);
+  if (useDeveloperSettingHidden(sectionProps.id)) return null;
 
   return (
     <section
@@ -334,6 +336,7 @@ export function SettingsRow({
   children?: ReactNode;
 }) {
   const targetRef = useSettingsSearchTarget<HTMLDivElement>(rowProps.id);
+  const hiddenByDeveloperMode = useDeveloperSettingHidden(rowProps.id);
   const primarySettingsAvailable = usePrimarySettingsAvailable();
   const context = useOptionalSettingsScope();
   const primaryEnvironmentId = usePrimaryEnvironmentId();
@@ -487,6 +490,7 @@ export function SettingsRow({
       />
     ) : null;
   const renderedStatus = status;
+  if (hiddenByDeveloperMode) return null;
 
   return (
     <div

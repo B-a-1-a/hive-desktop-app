@@ -136,10 +136,11 @@ export function SettingsSidebarNav({ pathname }: { pathname: string }) {
   const currentHash = useLocation({ select: (location) => location.hash });
   const activePath = SETTINGS_DETAIL_PAGE_PARENTS[pathname] ?? pathname;
   const developerMode = useDeveloperMode();
-  const navGroups = SETTINGS_NAV_GROUPS.map((group) => ({
-    ...group,
-    paths: group.paths.filter((path) => developerMode || !isDeveloperSettingsPath(path)),
-  })).filter((group) => group.paths.length > 0);
+  const navGroups = SETTINGS_NAV_GROUPS.map((group) => {
+    const paths = group.paths.filter((path) => developerMode || !isDeveloperSettingsPath(path));
+    // A heading over one entry only repeats it ("Projects" over "Projects").
+    return { heading: paths.length > 1 ? group.heading : null, paths };
+  }).filter((group) => group.paths.length > 0);
   const navPaths = navGroups.flatMap((group) => group.paths);
   const sectionNavigation = useSettingsSectionNavigation(
     navPaths.find((to) => activePath === to || activePath.startsWith(`${to}/`)) ??

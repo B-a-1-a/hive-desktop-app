@@ -1,4 +1,6 @@
 import { AUTH_SCOPE_OPTIONS as PAIRING_SCOPE_OPTIONS } from "@t3tools/shared/authScopeOptions";
+import { useDeveloperMode } from "~/hive/developerMode";
+import { isDeveloperAuthScope } from "~/hive/developerMode.logic";
 import { PlugIcon, PlusIcon, QrCodeIcon } from "lucide-react";
 import { type ReactNode, memo, useId, useState } from "react";
 import {
@@ -588,8 +590,12 @@ export const AuthorizedClientsHeaderAction = memo(function AuthorizedClientsHead
   clientSessions,
   isRevokingOtherClients,
   onRevokeOtherClients,
-  delegatableScopes,
+  delegatableScopes: allDelegatableScopes,
 }: AuthorizedClientsHeaderActionProps) {
+  const developerMode = useDeveloperMode();
+  const delegatableScopes = developerMode
+    ? allDelegatableScopes
+    : allDelegatableScopes.filter((scope) => !isDeveloperAuthScope(scope));
   const pairingDenial = managedCapabilityDenial(useManagedPolicy(environmentId), "remoteClients");
   const createPairingCredential = useAtomCommand(authEnvironment.createPairingCredential, {
     reportFailure: false,

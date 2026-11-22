@@ -1,4 +1,5 @@
 import { writeTextToClipboard } from "../hooks/useCopyToClipboard";
+import { useDeveloperMode } from "~/hive/developerMode";
 import { formatFilePathForClipboard } from "@t3tools/client-runtime/media-actions";
 import { readLocalApi } from "../localApi";
 import { stackedThreadToast, toastManager } from "./ui/toast";
@@ -201,7 +202,9 @@ const RunContextSelector = memo(function RunContextSelector({
         ? resolveEnvModeLabel("worktree")
         : resolveCurrentWorkspaceLabel(activeWorktreePath);
   const isPanel = displayMode === "panel";
-  const isLocked = envLocked || (envModeLocked && (!isPanel || !showEnvironmentPicker));
+  const developerMode = useDeveloperMode();
+  const isLocked =
+    envLocked || ((envModeLocked || !developerMode) && (!isPanel || !showEnvironmentPicker));
   const workspacePath =
     forceNewWorktree || (effectiveEnvMode === "worktree" && !activeWorktreePath)
       ? null
@@ -391,7 +394,7 @@ const RunContextSelector = memo(function RunContextSelector({
             <MenuSeparator />
           </>
         ) : null}
-        <MenuGroup>
+        <MenuGroup hidden={!developerMode}>
           <MenuGroupLabel>Workspace</MenuGroupLabel>
           <MenuRadioGroup
             value={effectiveEnvMode}

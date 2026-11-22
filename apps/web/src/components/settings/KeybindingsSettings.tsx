@@ -1,4 +1,6 @@
 import { useEnvironmentScope } from "../../state/session";
+import { useDeveloperMode } from "~/hive/developerMode";
+import { isDeveloperCommand } from "~/hive/developerMode.logic";
 import { useEnvironmentsWithScope, readEnvironmentScope } from "../../state/session";
 import {
   ChevronDownIcon,
@@ -1306,9 +1308,11 @@ function keybindingAnchorIds(rows: ReturnType<typeof buildKeybindingRows>) {
 function useKeybindingCatalog() {
   const serverKeybindings = useSettingsScope().environment?.serverConfig?.keybindings;
   const merged = mergeWithDefaultKeybindings(serverKeybindings ?? []);
+  const developerMode = useDeveloperMode();
+  const visible = (command: KeybindingCommand) => developerMode || !isDeveloperCommand(command);
   return {
-    commandOptions: buildKeybindingCommandOptions(merged),
-    allRows: buildKeybindingRows(merged),
+    commandOptions: buildKeybindingCommandOptions(merged).filter(visible),
+    allRows: buildKeybindingRows(merged).filter((row) => visible(row.command)),
   };
 }
 

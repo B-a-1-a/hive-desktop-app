@@ -1738,7 +1738,7 @@ export default function ChatView(props: ChatViewProps) {
       isDraftHeroState,
       persistInActiveThreads: settings.persistComposerContextStrip,
       hasActiveProject: activeProject !== null && !showProviderSubagentBar,
-      isGitRepo,
+      isGitRepo: isGitRepo && settings.developerModeEnabled,
       showEnvironmentIndicator: showComposerEnvironmentIndicator,
     });
   const terminalShortcutLabelOptions = {
@@ -3737,7 +3737,7 @@ export default function ChatView(props: ChatViewProps) {
                                   projectId={activeThread.projectId}
                                   worktreePath={activeThread.worktreePath}
                                   isServerThread={isServerThread}
-                                  showGitControls={isGitRepo}
+                                  showGitControls={isGitRepo && settings.developerModeEnabled}
                                   {...(routeKind === "draft" && draftId ? { draftId } : {})}
                                   onEnvModeChange={onEnvModeChangeStable}
                                   startFromOrigin={startFromOrigin}

@@ -1,4 +1,9 @@
-import type { KeybindingCommand } from "@t3tools/contracts";
+import {
+  AuthSourceControlWriteScope,
+  AuthTerminalOperateScope,
+  AuthTerminalReadScope,
+  type KeybindingCommand,
+} from "@t3tools/contracts";
 
 // Hive hides software-development tools until developer mode is on. Every list of what counts as
 // a developer tool lives here, so upstream files carry only a one-line filter.
@@ -38,6 +43,32 @@ const DEVELOPER_COMMANDS: ReadonlySet<string> = new Set([
   "composer.branch",
   "composer.previousWorktree",
   "composer.stash",
+  "composer.workspace",
+]);
+
+// Ids of single rows and sections on settings pages that otherwise stay visible.
+const DEVELOPER_SETTING_IDS: ReadonlySet<string> = new Set([
+  "new-threads",
+  "auto-settle-merged-threads",
+  "keep-threads-with-pull-requests",
+  "ghq-clone-layout",
+  "code-font",
+  "terminal-font",
+  "separate-fonts",
+  "pull-request-routing",
+  "composer-context",
+  "simlock-hosts",
+  "worktree-fast-checkout",
+  "project-actions",
+  "wsl-backend",
+]);
+const KEYBINDING_SETTING_PREFIX = "keybinding-";
+const PROVIDER_RUNTIME_SETTING = /^provider-instance-.+-runtime$/;
+
+const DEVELOPER_AUTH_SCOPES: ReadonlySet<string> = new Set([
+  AuthTerminalReadScope,
+  AuthTerminalOperateScope,
+  AuthSourceControlWriteScope,
 ]);
 
 export function isDeveloperSettingsPath(pathname: string) {
@@ -54,6 +85,19 @@ export function isDeveloperPanelSurface(label: string) {
 
 export function isDeveloperPaletteAction(value: string) {
   return DEVELOPER_PALETTE_ACTIONS.has(value);
+}
+
+export function isDeveloperSettingId(id: string) {
+  return (
+    DEVELOPER_SETTING_IDS.has(id) ||
+    PROVIDER_RUNTIME_SETTING.test(id) ||
+    (id.startsWith(KEYBINDING_SETTING_PREFIX) &&
+      isDeveloperCommand(id.slice(KEYBINDING_SETTING_PREFIX.length) as KeybindingCommand))
+  );
+}
+
+export function isDeveloperAuthScope(scope: string) {
+  return DEVELOPER_AUTH_SCOPES.has(scope);
 }
 
 export function isDeveloperCommand(command: KeybindingCommand) {
